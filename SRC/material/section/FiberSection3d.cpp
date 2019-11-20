@@ -629,6 +629,8 @@ FiberSection3d::getCopy(void)
   theCopy->Abar = Abar;
   theCopy->yBar = yBar;
   theCopy->zBar = zBar;
+  theCopy->ys = ys; //Xinlong 11/20/2019
+  theCopy->zs = zs; //Xinlong 11/20/2019
 
   for (int i=0; i<25; i++)       //Xinlong
     theCopy->kData[i] = kData[i];
