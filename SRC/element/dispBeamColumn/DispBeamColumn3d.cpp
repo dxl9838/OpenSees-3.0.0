@@ -394,6 +394,10 @@ DispBeamColumn3d::update(void)
 	e(4) = dNv1 * v(1) + dNv2 * v(2); //v'
 	e(5) = dNw1 * v(3) + dNw2 * v(4); //w'
 	e(6) = Nf1 * v(5); //phi
+	e(7) = v(1); //theta_Iz
+	e(8) = v(3); //theta_Iy
+	e(9) = v(2); //theta_Jz
+	e(10) = v(4); //theta_Jy
 
     // Set the section deformations
     err += theSections[i]->setTrialSectionDeformation(e);
@@ -413,11 +417,11 @@ DispBeamColumn3d::getTangentStiff()
   //double ys = -0.6741; //y coord of shear center w.r.t. centroid
 
   static Matrix kb(6,6);
-  static Matrix N1(5, 7); //Xinlong
-  static Matrix N2(7, 6); //Xinlong
-  static Matrix N3(7, 7); //Xinlong
+  static Matrix N1(5, 11); //Xinlong
+  static Matrix N2(11, 6); //Xinlong
+  static Matrix N3(11, 11); //Xinlong
   static Matrix kbPart1(6, 6);
-  static Matrix Gmax(7, 7);
+  static Matrix Gmax(11, 11);
   static Matrix kbPart2(6, 6);
   static Matrix Tr(6, 6);
   static Matrix kf1(6, 6);
@@ -473,30 +477,38 @@ DispBeamColumn3d::getTangentStiff()
 
 	  //Matrix Ndeltad1-------------------------------------------------------
 	  N1(0, 0) = 1.0;
-	  N1(0, 1) = dv + zs * df;
-	  N1(0, 2) = dw - ys * df;
-	  N1(0, 6) = zs * dv - ys * dw;
-	  N1(1, 3) = 1.0;
-	  N1(1, 4) = f;
-	  N1(1, 5) = ddw;
-	  N1(2, 3) = f;
-	  N1(2, 4) = -1.0;
-	  N1(2, 5) = ddv;
-	  N1(3, 6) = df;
-	  N1(4, 6) = 1.0;
+	  N1(0, 1) = (4.0*v(1) - v(2)) / 30.0;
+	  N1(0, 2) = (4.0*v(3) - v(4)) / 30.0;
+	  N1(0, 3) = (4.0*v(2) - v(1)) / 30.0;
+	  N1(0, 4) = (4.0*v(4) - v(3)) / 30.0;
+	  N1(0, 5) = zs * df;
+	  N1(0, 6) = - ys * df;
+	  N1(0, 10) = zs * dv - ys * dw;
+	  N1(1, 7) = 1.0;
+	  N1(1, 8) = f;
+	  N1(1, 9) = ddw;
+	  N1(2, 7) = f;
+	  N1(2, 8) = -1.0;
+	  N1(2, 9) = ddv;
+	  N1(3, 10) = df;
+	  N1(4, 10) = 1.0;
 
 	  //Matrix Ndeltad2-------------------------------------------------------
 	  N2(0, 0) = oneOverL;
-	  N2(1, 1) = dNv1;
-	  N2(1, 2) = dNv2;
-	  N2(2, 3) = dNw1;
-	  N2(2, 4) = dNw2;
-	  N2(3, 1) = ddNv1;
-	  N2(3, 2) = ddNv2;
-	  N2(4, 3) = ddNw1;
-	  N2(4, 4) = ddNw2;
-	  N2(5, 5) = Nf1;
-	  N2(6, 5) = oneOverL;
+	  N2(1, 1) = 1.0;
+	  N2(2, 3) = 1.0;
+	  N2(3, 2) = 1.0;
+	  N2(4, 4) = 1.0;
+	  N2(5, 1) = dNv1;
+	  N2(5, 2) = dNv2;
+	  N2(6, 3) = dNw1;
+	  N2(6, 4) = dNw2;
+	  N2(7, 1) = ddNv1;
+	  N2(7, 2) = ddNv2;
+	  N2(8, 3) = ddNw1;
+	  N2(8, 4) = ddNw2;
+	  N2(9, 5) = Nf1;
+	  N2(10, 5) = oneOverL;
 
 	  //Transformation matrix - transform axial force form centroid to shear center
 	  Tr(0, 0) = 1.0;
@@ -519,12 +531,13 @@ DispBeamColumn3d::getTangentStiff()
 	kbPart1.addMatrixTripleProduct(0.0, N2, N3, 1.0);
 
 	//calculate kbPart2 - geometric stiffness matrix
-	Gmax(1, 1) = Gmax(2, 2) = s(0); //N
-	Gmax(5, 4) = Gmax(4, 5) = s(1); //Mz
-	Gmax(5, 3) = Gmax(3, 5) = s(2); //My
-	Gmax(6, 1) = Gmax(1, 6) = s(0)*zs; //Nzs
-	Gmax(6, 2) = Gmax(2, 6) = -s(0)*ys; //-Nys
-	Gmax(6, 6) = s(3); //W
+	Gmax(1, 1) = Gmax(2, 2) = Gmax(3, 3) = Gmax(4, 4) = s(0)*4.0 / 30.0; // 4/30*N
+	Gmax(1, 3) = Gmax(2, 4) = Gmax(3, 1) = Gmax(4, 2) = -s(0) / 30.0; // -1/30*N
+	Gmax(9, 8) = Gmax(8, 9) = s(1); //Mz
+	Gmax(9, 7) = Gmax(7, 9) = s(2); //My
+	Gmax(10, 5) = Gmax(5, 10) = s(0)*zs; //Nzs
+	Gmax(10, 6) = Gmax(6, 10) = -s(0)*ys; //-Nys
+	Gmax(10, 10) = s(3); //W
 
 	kbPart2.addMatrixTripleProduct(0.0, N2, Gmax, 1.0);
 
@@ -541,7 +554,7 @@ DispBeamColumn3d::getTangentStiff()
 	}
 
 	//assemble internal force vector q
-	static Vector qProduct1(7);
+	static Vector qProduct1(11);
 	static Vector qProduct2(6);
 	static Vector qProduct3(6);
 	qProduct1.Zero();
@@ -575,11 +588,11 @@ DispBeamColumn3d::getInitialBasicStiff()
   //double ys = -0.6741; //y coord of shear center w.r.t. centroid
 
   static Matrix kb(6,6);
-  static Matrix N1(5, 7); //Xinlong
-  static Matrix N2(7, 6); //Xinlong
-  static Matrix N3(7, 7); //Xinlong
+  static Matrix N1(5, 11); //Xinlong
+  static Matrix N2(11, 6); //Xinlong
+  static Matrix N3(11, 11); //Xinlong
   static Matrix kbPart1(6, 6);
-  static Matrix Gmax(7, 7);
+  static Matrix Gmax(11, 11);
   static Matrix kbPart2(6, 6);
   static Matrix Tr(6, 6);
   static Matrix kf1(6, 6);
@@ -634,30 +647,38 @@ DispBeamColumn3d::getInitialBasicStiff()
 
 	  //Matrix Ndeltad1-------------------------------------------------------
 	  N1(0, 0) = 1.0;
-	  N1(0, 1) = dv + zs * df;
-	  N1(0, 2) = dw - ys * df;
-	  N1(0, 6) = zs * dv - ys * dw;
-	  N1(1, 3) = 1.0;
-	  N1(1, 4) = f;
-	  N1(1, 5) = ddw;
-	  N1(2, 3) = f;
-	  N1(2, 4) = -1.0;
-	  N1(2, 5) = ddv;
-	  N1(3, 6) = df;
-	  N1(4, 6) = 1.0;
+	  N1(0, 1) = (4.0*v(1) - v(2)) / 30.0;
+	  N1(0, 2) = (4.0*v(3) - v(4)) / 30.0;
+	  N1(0, 3) = (4.0*v(2) - v(1)) / 30.0;
+	  N1(0, 4) = (4.0*v(4) - v(3)) / 30.0;
+	  N1(0, 5) = zs * df;
+	  N1(0, 6) = -ys * df;
+	  N1(0, 10) = zs * dv - ys * dw;
+	  N1(1, 7) = 1.0;
+	  N1(1, 8) = f;
+	  N1(1, 9) = ddw;
+	  N1(2, 7) = f;
+	  N1(2, 8) = -1.0;
+	  N1(2, 9) = ddv;
+	  N1(3, 10) = df;
+	  N1(4, 10) = 1.0;
 
 	  //Matrix Ndeltad2-------------------------------------------------------
 	  N2(0, 0) = oneOverL;
-	  N2(1, 1) = dNv1;
-	  N2(1, 2) = dNv2;
-	  N2(2, 3) = dNw1;
-	  N2(2, 4) = dNw2;
-	  N2(3, 1) = ddNv1;
-	  N2(3, 2) = ddNv2;
-	  N2(4, 3) = ddNw1;
-	  N2(4, 4) = ddNw2;
-	  N2(5, 5) = Nf1;
-	  N2(6, 5) = oneOverL;
+	  N2(1, 1) = 1.0;
+	  N2(2, 3) = 1.0;
+	  N2(3, 2) = 1.0;
+	  N2(4, 4) = 1.0;
+	  N2(5, 1) = dNv1;
+	  N2(5, 2) = dNv2;
+	  N2(6, 3) = dNw1;
+	  N2(6, 4) = dNw2;
+	  N2(7, 1) = ddNv1;
+	  N2(7, 2) = ddNv2;
+	  N2(8, 3) = ddNw1;
+	  N2(8, 4) = ddNw2;
+	  N2(9, 5) = Nf1;
+	  N2(10, 5) = oneOverL;
 
 	  //Transformation matrix - transform axial force form centroid to shear center
 	  Tr(0, 0) = 1.0;
@@ -680,12 +701,13 @@ DispBeamColumn3d::getInitialBasicStiff()
 	  kbPart1.addMatrixTripleProduct(0.0, N2, N3, 1.0);
 
 	  //calculate kbPart2 - geometric stiffness matrix
-	  Gmax(1, 1) = Gmax(2, 2) = s(0); //N
-	  Gmax(5, 4) = Gmax(4, 5) = s(1); //Mz
-	  Gmax(5, 3) = Gmax(3, 5) = s(2); //My
-	  Gmax(6, 1) = Gmax(1, 6) = s(0)*zs; //Nzs
-	  Gmax(6, 2) = Gmax(2, 6) = -s(0)*ys; //-Nys
-	  Gmax(6, 6) = s(3); //W
+	  Gmax(1, 1) = Gmax(2, 2) = Gmax(3, 3) = Gmax(4, 4) = s(0)*4.0 / 30.0; // 4/30*N
+	  Gmax(1, 3) = Gmax(2, 4) = Gmax(3, 1) = Gmax(4, 2) = -s(0) / 30.0; // -1/30*N
+	  Gmax(9, 8) = Gmax(8, 9) = s(1); //Mz
+	  Gmax(9, 7) = Gmax(7, 9) = s(2); //My
+	  Gmax(10, 5) = Gmax(5, 10) = s(0)*zs; //Nzs
+	  Gmax(10, 6) = Gmax(6, 10) = -s(0)*ys; //-Nys
+	  Gmax(10, 10) = s(3); //W
 
 	  kbPart2.addMatrixTripleProduct(0.0, N2, Gmax, 1.0);
 
@@ -913,8 +935,8 @@ DispBeamColumn3d::getResistingForce()
 	//double zs = 0.6385; //z coord of shear center w.r.t. centroid
 	//double ys = -0.6741; //y coord of shear center w.r.t. centroid
 
-	static Matrix N1(5, 7); //Xinlong
-	static Matrix N2(7, 6); //Xinlong
+	static Matrix N1(5, 11); //Xinlong
+	static Matrix N2(11, 6); //Xinlong
 	static Matrix Tr(6, 6);
 
 	const Vector &v = crdTransf->getBasicTrialDisp();
@@ -959,30 +981,38 @@ DispBeamColumn3d::getResistingForce()
 
 	  //Matrix Ndeltad1-------------------------------------------------------
 	  N1(0, 0) = 1.0;
-	  N1(0, 1) = dv + zs * df;
-	  N1(0, 2) = dw - ys * df;
-	  N1(0, 6) = zs * dv - ys * dw;
-	  N1(1, 3) = 1.0;
-	  N1(1, 4) = f;
-	  N1(1, 5) = ddw;
-	  N1(2, 3) = f;
-	  N1(2, 4) = -1.0;
-	  N1(2, 5) = ddv;
-	  N1(3, 6) = df;
-	  N1(4, 6) = 1.0;
+	  N1(0, 1) = (4.0*v(1) - v(2)) / 30.0;
+	  N1(0, 2) = (4.0*v(3) - v(4)) / 30.0;
+	  N1(0, 3) = (4.0*v(2) - v(1)) / 30.0;
+	  N1(0, 4) = (4.0*v(4) - v(3)) / 30.0;
+	  N1(0, 5) = zs * df;
+	  N1(0, 6) = -ys * df;
+	  N1(0, 10) = zs * dv - ys * dw;
+	  N1(1, 7) = 1.0;
+	  N1(1, 8) = f;
+	  N1(1, 9) = ddw;
+	  N1(2, 7) = f;
+	  N1(2, 8) = -1.0;
+	  N1(2, 9) = ddv;
+	  N1(3, 10) = df;
+	  N1(4, 10) = 1.0;
 
 	  //Matrix Ndeltad2-------------------------------------------------------
 	  N2(0, 0) = oneOverL;
-	  N2(1, 1) = dNv1;
-	  N2(1, 2) = dNv2;
-	  N2(2, 3) = dNw1;
-	  N2(2, 4) = dNw2;
-	  N2(3, 1) = ddNv1;
-	  N2(3, 2) = ddNv2;
-	  N2(4, 3) = ddNw1;
-	  N2(4, 4) = ddNw2;
-	  N2(5, 5) = Nf1;
-	  N2(6, 5) = oneOverL;
+	  N2(1, 1) = 1.0;
+	  N2(2, 3) = 1.0;
+	  N2(3, 2) = 1.0;
+	  N2(4, 4) = 1.0;
+	  N2(5, 1) = dNv1;
+	  N2(5, 2) = dNv2;
+	  N2(6, 3) = dNw1;
+	  N2(6, 4) = dNw2;
+	  N2(7, 1) = ddNv1;
+	  N2(7, 2) = ddNv2;
+	  N2(8, 3) = ddNw1;
+	  N2(8, 4) = ddNw2;
+	  N2(9, 5) = Nf1;
+	  N2(10, 5) = oneOverL;
 
 	  //Transformation matrix - transform axial force form centroid to shear center
 	  Tr(0, 0) = 1.0;
@@ -1003,7 +1033,7 @@ DispBeamColumn3d::getResistingForce()
 	  double wti = wt[i];
 	 
 	  //assemble internal force vector q
-	  static Vector qProduct1(7);
+	  static Vector qProduct1(11);
 	  static Vector qProduct2(6);
 	  static Vector qProduct3(6);
 	  qProduct1.Zero();
