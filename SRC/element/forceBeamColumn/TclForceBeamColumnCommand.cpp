@@ -26,7 +26,10 @@
 // Created: Feb 2001
 //
 // Description: This file contains the implementation of the 
-// TclModelBuilder_addDispBeamColumn() command. 
+// TclModelBuilder_addDispBeamColumn() command.
+
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Added input options for shear center coordinates through 'dispBeamColumn' command.
 
 #include <stdlib.h>
 #include <string.h>

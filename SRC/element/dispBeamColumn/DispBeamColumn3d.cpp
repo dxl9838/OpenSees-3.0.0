@@ -27,6 +27,10 @@
 //
 // Description: This file contains the class definition for DispBeamColumn3d.
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Adapted for analysis of asymmetric sections with introducing
+// high-order axial terms for the basic element formulation
+
 #include <DispBeamColumn3d.h>
 #include <Node.h>
 #include <SectionForceDeformation.h>

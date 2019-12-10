@@ -29,6 +29,9 @@
 // Purpose: This file contains the class definition for ElasticBeam3d.
 // ElasticBeam3d is a plane frame member.
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Adapted for analysis of asymmetric sections.
+
 #ifndef ElasticBeam3d_h
 #define ElasticBeam3d_h
 

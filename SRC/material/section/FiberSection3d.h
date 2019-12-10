@@ -30,6 +30,9 @@
 // 3d beam section discretized by fibers. The section stiffness and
 // stress resultants are obtained by summing fiber contributions.
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Modified FiberSection3d.h to include shear center coordinates and high-order longitudinal strain terms.
+
 #ifndef FiberSection3d_h
 #define FiberSection3d_h
 

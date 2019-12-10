@@ -29,6 +29,10 @@
 // The element displacement field gives rise to constant axial strain,
 // linear curvature, and constant twist angle.
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Adapted for analysis of asymmetric sections with introducing
+// high-order axial terms for the basic element formulation
+
 #ifndef DispBeamColumn3d_h
 #define DispBeamColumn3d_h
 

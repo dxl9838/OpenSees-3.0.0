@@ -29,6 +29,11 @@
 // Description: This file contains the function to parse the TCL input
 // for the elasticBeamColumn element.
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Adapted for analysis of asymmetric sections, and
+// input is handled by function 'OPS_ElasticBeam3d(void)', so this
+// function and the modifications made here do not work (not very sure).
+
 #include <stdlib.h>
 #include <string.h>
 #include <Domain.h>

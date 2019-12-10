@@ -31,6 +31,9 @@
 //
 // What: "@(#) TclModelBuilderMaterialCommands.C, revA"
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Added input options for shear center coordinates through 'section' command to 'FiberSection3d'.
+
 #include <TclModelBuilder.h>
 
 #include <ElasticMaterial.h>

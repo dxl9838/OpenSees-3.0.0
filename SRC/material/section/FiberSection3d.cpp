@@ -27,6 +27,9 @@
 //
 // Description: This file contains the class implementation of FiberSection2d.
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Modified FiberSection3d.cpp to include shear center coordinates and high-order longitudinal strain terms.
+
 #include <stdlib.h>
 #include <math.h>
 
