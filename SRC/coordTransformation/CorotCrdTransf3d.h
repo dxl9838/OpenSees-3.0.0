@@ -139,5 +139,6 @@ private:
     
     double *nodeIInitialDisp, *nodeJInitialDisp;
     bool initialDispChecked;
+	bool nodeOffsets;
 };
 #endif

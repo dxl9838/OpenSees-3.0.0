@@ -138,11 +138,10 @@ nodeIInitialDisp(0), nodeJInitialDisp(0), initialDispChecked(false)
     // temporary
     if (nodeIOffset.Norm() != 0 || nodeJOffset.Norm() != 0)
     {
-        opserr << "CorotCrdTransf3d::CorotCrdTransf3d: rigid joint zones not implemented yet\n";
-        opserr << "Using zero values\n"; 
-        nodeIOffset.Zero();
-        nodeJOffset.Zero();
-    }
+		nodeOffsets = true;
+	}
+	else
+		nodeOffsets = false;
     
     // Permutation matrix (to renumber basic dof's)
     
@@ -384,7 +383,16 @@ CorotCrdTransf3d::update(void)
         for (int j=0; j<6; j++)
             dispJ(j) -= nodeJInitialDisp[j];
     }
-    
+    // account for rigit offsets
+	if (nodeOffsets == true) {
+		dispI(0) = dispI(0) + dispI(4)*nodeIOffset(2) - dispI(5)*nodeIOffset(1);
+		dispI(1) = dispI(1) - dispI(3)*nodeIOffset(2) + dispI(5)*nodeIOffset(0);
+		dispI(2) = dispI(2) + dispI(3)*nodeIOffset(1) - dispI(4)*nodeIOffset(0);
+
+		dispJ(0) = dispJ(0) + dispJ(4)*nodeJOffset(2) - dispJ(5)*nodeJOffset(1);
+		dispJ(1) = dispJ(1) - dispJ(3)*nodeJOffset(2) + dispJ(5)*nodeJOffset(0);
+		dispJ(2) = dispJ(2) + dispJ(3)*nodeJOffset(1) - dispJ(4)*nodeJOffset(0);
+	}
     // get the iterative spins dAlphaI and dAlphaJ 
     // (rotational displacement increments at both nodes)
     
@@ -1167,6 +1175,17 @@ CorotCrdTransf3d::getGlobalResistingForce(const Vector &pb, const Vector &p0)
         pg.addVector(1.0, pg0, 1.0);
     }
     
+	// account for rigid offsets
+	if (nodeOffsets == true) {
+		pg(3) += -pg(1) * nodeIOffset(2) + pg(2) * nodeIOffset(1);
+		pg(4) += pg(0) * nodeIOffset(2) - pg(2) * nodeIOffset(0);
+		pg(5) += -pg(0) * nodeIOffset(1) + pg(1) * nodeIOffset(0);
+
+		pg(9) += -pg(7) * nodeJOffset(2) + pg(8) * nodeJOffset(1);
+		pg(10) += pg(6) * nodeJOffset(2) - pg(8) * nodeJOffset(0);
+		pg(11) += -pg(6) * nodeJOffset(1) + pg(7) * nodeJOffset(0);
+	}
+
     return pg;
 }
 
@@ -1443,6 +1462,42 @@ CorotCrdTransf3d::getGlobalStiffMatrix(const Matrix &kb, const Vector &pb)
             }
             
 	    //            opserr << "COROATIONAL 3d: kg final: " << kg;
+			// account for rigid offsets
+			if (nodeOffsets == true) {
+				static Matrix Toff(12, 12);
+				static Matrix kgOff(12, 12);
+				Toff.Zero();
+				kgOff.Zero();
+
+				Toff(0, 0) = 1.0;
+				Toff(1, 1) = 1.0;
+				Toff(2, 2) = 1.0;
+				Toff(3, 3) = 1.0;
+				Toff(4, 4) = 1.0;
+				Toff(5, 5) = 1.0;
+				Toff(6, 6) = 1.0;
+				Toff(7, 7) = 1.0;
+				Toff(8, 8) = 1.0;
+				Toff(9, 9) = 1.0;
+				Toff(10, 10) = 1.0;
+				Toff(11, 11) = 1.0;
+				Toff(0, 4) = nodeIOffset(2);
+				Toff(0, 5) = -nodeIOffset(1);
+				Toff(1, 3) = -nodeIOffset(2);
+				Toff(1, 5) = nodeIOffset(0);
+				Toff(2, 3) = nodeIOffset(1);
+				Toff(2, 4) = -nodeIOffset(0);
+				Toff(6, 10) = nodeJOffset(2);
+				Toff(6, 11) = -nodeJOffset(1);
+				Toff(7, 9) = -nodeJOffset(2);
+				Toff(7, 11) = nodeJOffset(0);
+				Toff(8, 9) = nodeJOffset(1);
+				Toff(8, 10) = -nodeJOffset(0);
+
+				kgOff.addMatrixTripleProduct(0.0, Toff, kg, 1.0);      // kgOff = Toff ^ kg * Toff;
+				//kg.Zero();
+				kg = kgOff; // or copy matrix elements one by one, or return kgOff, or replace kg in the previous code with kgg? (don't need the previous actions, this is a deep copy, refer to Matrix.cpp) 
+			}
             
             return kg;
 }
@@ -1461,6 +1516,43 @@ CorotCrdTransf3d::getInitialGlobalStiffMatrix(const Matrix &kb)
     // compute the tangent stiffness matrix in global coordinates
     kg.addMatrixTripleProduct(0.0, T, kl, 1.0);
     
+	// account for rigid offsets
+	if (nodeOffsets == true) {
+		static Matrix Toff(12, 12);
+		static Matrix kgOff(12, 12);
+		Toff.Zero();
+		kgOff.Zero();
+
+		Toff(0, 0) = 1.0;
+		Toff(1, 1) = 1.0;
+		Toff(2, 2) = 1.0;
+		Toff(3, 3) = 1.0;
+		Toff(4, 4) = 1.0;
+		Toff(5, 5) = 1.0;
+		Toff(6, 6) = 1.0;
+		Toff(7, 7) = 1.0;
+		Toff(8, 8) = 1.0;
+		Toff(9, 9) = 1.0;
+		Toff(10, 10) = 1.0;
+		Toff(11, 11) = 1.0;
+		Toff(0, 4) = nodeIOffset(2);
+		Toff(0, 5) = -nodeIOffset(1);
+		Toff(1, 3) = -nodeIOffset(2);
+		Toff(1, 5) = nodeIOffset(0);
+		Toff(2, 3) = nodeIOffset(1);
+		Toff(2, 4) = -nodeIOffset(0);
+		Toff(6, 10) = nodeJOffset(2);
+		Toff(6, 11) = -nodeJOffset(1);
+		Toff(7, 9) = -nodeJOffset(2);
+		Toff(7, 11) = nodeJOffset(0);
+		Toff(8, 9) = nodeJOffset(1);
+		Toff(8, 10) = -nodeJOffset(0);
+
+		kgOff.addMatrixTripleProduct(0.0, Toff, kg, 1.0);      // kgOff = Toff ^ kg * Toff;
+		//kg.Zero();
+		kg = kgOff; // or copy matrix elements one by one, or return kgOff, or replace kg in the previous code with kgg?? (don't need the previous actions, this is a deep copy, refer to Matrix.cpp) 
+	}
+
     return kg;
 }
 
