@@ -33,6 +33,9 @@
 
 // What: "@(#) CorotCrdTransf3d.h, revA"
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Added rigid offsets to account for eccentricities of connections.
+
 #ifndef CorotCrdTransf3d_h
 #define CorotCrdTransf3d_h
 

@@ -33,6 +33,9 @@
 // transformation for a spatial frame between the global 
 // and basic coordinate systems.
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Added rigid offsets to account for eccentricities of connections.
+
 #include <math.h>
 #include <Vector.h>
 #include <Matrix.h>
