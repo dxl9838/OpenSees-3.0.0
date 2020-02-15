@@ -147,6 +147,7 @@ class mixedBeamColumn3d : public Element
     Vector *sectionForceFibers;
     Vector *sectionDefFibers;
     Matrix *sectionFlexibility;
+	Vector *sectionForceShapeFcn;
 
     // Committed versions
     Vector committedV;
@@ -161,7 +162,8 @@ class mixedBeamColumn3d : public Element
     Matrix *commitedSectionFlexibility;
 
     // static data - single copy for all objects of the class
-    static int maxNumSections;
+    //static int maxNumSections;
+	enum { maxNumSections = 10 };
     static Matrix theMatrix;
     static Vector theVector;
     static double workArea[];

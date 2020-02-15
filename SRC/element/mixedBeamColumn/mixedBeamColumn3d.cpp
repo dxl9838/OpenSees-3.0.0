@@ -70,7 +70,7 @@ Vector mixedBeamColumn3d::theVector(NEGD);
 double mixedBeamColumn3d::workArea[400];
 Matrix mixedBeamColumn3d::transformNaturalCoords(NDM_NATURAL_WITH_TORSION,NDM_NATURAL_WITH_TORSION);
 Matrix mixedBeamColumn3d::transformNaturalCoordsT(NDM_NATURAL_WITH_TORSION,NDM_NATURAL_WITH_TORSION);
-int mixedBeamColumn3d::maxNumSections = 10;
+//int mixedBeamColumn3d::maxNumSections = 10;
 
 Vector *mixedBeamColumn3d::sectionDefShapeFcn = 0;
 Matrix *mixedBeamColumn3d::nldhat = 0;
@@ -304,7 +304,7 @@ mixedBeamColumn3d::mixedBeamColumn3d (int tag, int nodeI, int nodeJ, int numSec,
   Ki(0),
   sectionForceFibers(0), commitedSectionForceFibers(0),
   sectionDefFibers(0), commitedSectionDefFibers(0),
-  sectionFlexibility(0), commitedSectionFlexibility(0)
+  sectionFlexibility(0), commitedSectionFlexibility(0), sectionForceShapeFcn(0)
 {
   theNodes[0] = 0;
   theNodes[1] = 0;
@@ -465,7 +465,7 @@ mixedBeamColumn3d::mixedBeamColumn3d():
   kv(NDM_NATURAL_WITH_TORSION,NDM_NATURAL_WITH_TORSION), kvcommit(NDM_NATURAL_WITH_TORSION,NDM_NATURAL_WITH_TORSION),
   Ki(0),
   sectionForceFibers(0), commitedSectionForceFibers(0), sectionDefFibers(0), commitedSectionDefFibers(0),
-  sectionFlexibility(0), commitedSectionFlexibility(0)
+  sectionFlexibility(0), commitedSectionFlexibility(0), sectionForceShapeFcn(0)
 {
   theNodes[0] = 0;
   theNodes[1] = 0;
@@ -599,6 +599,8 @@ mixedBeamColumn3d::~mixedBeamColumn3d() {
 
   if (commitedSectionFlexibility != 0)
     delete [] commitedSectionFlexibility;
+  if (sectionForceShapeFcn != 0)
+	  delete[] sectionForceShapeFcn;
 }
 
 int mixedBeamColumn3d::getNumExternalNodes(void) const {
@@ -972,7 +974,8 @@ int mixedBeamColumn3d::update() {
   // Define Variables
   double GJ;
   double torsionalForce;
-  Vector sectionForceShapeFcn[numSections];
+  //Vector sectionForceShapeFcn[numSections];
+  sectionForceShapeFcn = new Vector[numSections];
   for ( i = 0; i < numSections; i++ ) {
     sectionForceShapeFcn[i] = Vector(NDM_SECTION);
   }
@@ -1323,7 +1326,7 @@ void mixedBeamColumn3d::Print(OPS_Stream &s, int flag) {
     beamIntegr->Print(s, flag);
     s << ", \"massperlength\": " << rho << ", ";
     s << "\"crdTransformation\": \"" << crdTransf->getTag() << "\"";
-    if (not doRayleigh)
+    if (!doRayleigh)
       s << ", \"doRayleigh\": false";
     if (geomLinear)
       s << ", \"geomLinear\": true";
