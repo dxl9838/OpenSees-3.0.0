@@ -131,7 +131,7 @@ OPS_Export void localInit() {
 //      Urbana-Champaign, Urbana, Illinois, March.
 //
 
-OPS_Export void * OPS_mixedBeamColumn3d() {
+void * OPS_mixedBeamColumn3d() {
   // Variables to retrieve input
   int iData[10];
   double dData[10];

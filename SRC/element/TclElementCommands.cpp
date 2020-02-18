@@ -158,6 +158,7 @@ extern  void *OPS_CatenaryCableElement(void);
 extern  void *OPS_ShellANDeS(void);
 extern  void *OPS_FourNodeTetrahedron(void);
 extern  void *OPS_LysmerTriangle(void);
+extern  void *OPS_mixedBeamColumn3d(); //Xinlong
 
 extern int TclModelBuilder_addFeapTruss(ClientData clientData, Tcl_Interp *interp,  int argc,
 					TCL_Char **argv, Domain*, TclModelBuilder *, int argStart);
@@ -1111,7 +1112,20 @@ TclModelBuilderElementCommand(ClientData clientData, Tcl_Interp *interp,
         return TCL_ERROR;
       }
   }
+  //Xinlong
+  else if ((strcmp(argv[1], "mixedBeamColumn") == 0) || (strcmp(argv[1], "mixedBeam")) == 0) {
+  Element *theEle = 0;
+  if (OPS_GetNDM() == 3)
+	  theEle = (Element *)OPS_mixedBeamColumn3d();
+  if (theEle != 0)
+	  theElement = theEle;
+  else {
+	  opserr << "TclElementCommand -- unable to create element of type : " << argv[1] << endln;
+	  return TCL_ERROR;
+  }
 
+  }
+  //Xinlong
   // if one of the above worked
   if (theElement != 0) {
     if (theTclDomain->addElement(theElement) == false) {
