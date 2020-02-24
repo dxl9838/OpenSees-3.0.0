@@ -22,6 +22,10 @@
 // $Date: 2010-05-04 17:14:46 $
 // $Source: /scratch/slocal/chroot/cvsroot/openseescomp/CompositePackages/mixedBeamColumn3d/mixedBeamColumn3d.h,v $
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2020
+// Description: Adapted for analysis of asymmetric sections with introducing
+// high-order axial terms for the basic element formulation
+
 #ifndef mixedBeamColumn3d_h
 #define mixedBeamColumn3d_h
 
@@ -55,7 +59,7 @@ class mixedBeamColumn3d : public Element
     // constructors
     mixedBeamColumn3d (int tag, int nodeI, int nodeJ,
             int numSections, SectionForceDeformation **sectionPtrs, BeamIntegration &bi,
-            CrdTransf &coordTransf, double massDensPerUnitLength, int doRayleigh, bool geomLinear);
+            CrdTransf &coordTransf, double ys, double zs, double massDensPerUnitLength, int doRayleigh, bool geomLinear);
     mixedBeamColumn3d ();
 
     // destructor
@@ -178,6 +182,9 @@ class mixedBeamColumn3d : public Element
     static Matrix *nd2;
     static Matrix *nd1T;
     static Matrix *nd2T;
+
+	double ys;     //Xinlong: y coord of shear center relative to centroid
+	double zs;     //Xinlong: z coord of shear center relative to centroid
 };
 
 #endif

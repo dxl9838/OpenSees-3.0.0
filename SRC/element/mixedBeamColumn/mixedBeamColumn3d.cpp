@@ -22,6 +22,10 @@
 // $Date: 2010-05-04 17:14:45 $
 // $Source: /scratch/slocal/chroot/cvsroot/openseescomp/CompositePackages/mixedBeamColumn3d/mixedBeamColumn3d.cpp,v $
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2020
+// Description: Adapted for analysis of asymmetric sections with introducing
+// high-order axial terms for the basic element formulation
+
 #include "mixedBeamColumn3d.h"
 #include <elementAPI.h>
 #include <G3Globals.h>
@@ -80,7 +84,7 @@ Matrix *mixedBeamColumn3d::nd1T = 0;
 Matrix *mixedBeamColumn3d::nd2T = 0;
 
 
-
+/*
 #ifdef _USRDLL
 #include <windows.h>
 #define OPS_Export extern "C" _declspec(dllexport)
@@ -94,6 +98,7 @@ Matrix *mixedBeamColumn3d::nd2T = 0;
 OPS_Export void localInit() {
   OPS_Error("mixedBeamColumn3d element \nWritten by Mark D. Denavit, University of Illinois at Urbana-Champaign\n", 1);
 }
+*/
 
 // Documentation: Three Dimensional Mixed Beam Column Element
 // element mixedBeamColumn3d $tag $iNode $jNode $numIntgrPts $secTag $transfTag <-mass $massDens>
@@ -116,6 +121,8 @@ OPS_Export void localInit() {
 //                              rFlag = 0 no rayleigh damping
 //                              rFlag = 1 include rayleigh damping (default)
 //   -geomLinear            perform analysis without internal geometric nonlinearity
+//   -shearCenter $ys $zs
+//       $ys $zs            coordinates of shear center w.r.t centroid
 //
 //
 // References:
@@ -135,6 +142,7 @@ void * OPS_mixedBeamColumn3d() {
   // Variables to retrieve input
   int iData[10];
   double dData[10];
+  double dData2[2]; //input of ys and zs
   int sDataLength = 40;
   char *sData  = new char[sDataLength];
   char *sData2 = new char[sDataLength];
@@ -254,7 +262,14 @@ void * OPS_mixedBeamColumn3d() {
     } else if ( strcmp(sData,"-geomLinear") == 0 ) {
       geomLinear = true;
 
-    } else {
+	} else if (strcmp(sData, "-shearCenter") == 0) {
+		// Get the coordinates of shear center w.r.t centroid
+		numData = 2;
+		if (OPS_GetDoubleInput(&numData, &dData2[0]) < 0) {
+			opserr << "WARNING: invalid ys and zs\n";
+			return 0;
+		}
+	} else {
       opserr << "WARNING unknown option " << sData << "\n";
     }
   }
@@ -266,12 +281,19 @@ void * OPS_mixedBeamColumn3d() {
   }
 
   // now create the element and add it to the Domain
-  Element *theElement = new mixedBeamColumn3d(eleTag, nodeI, nodeJ, numIntgrPts, sections, *beamIntegr, *theTransf, massDens, doRayleigh, geomLinear);
+  Element *theElement = new mixedBeamColumn3d(eleTag, nodeI, nodeJ, numIntgrPts, sections, *beamIntegr, *theTransf,
+	  dData2[0], dData2[1], massDens, doRayleigh, geomLinear);
 
   if (theElement == 0) {
     opserr << "WARNING ran out of memory creating element with tag " << eleTag << endln;
     return 0;
   }
+
+  delete[] sections;
+  if (beamIntegr != 0)
+	  delete beamIntegr;
+  delete[] sData; //This is temporary. See how to deal with charactor inputs in ForceBeamColume3d.cpp
+  delete[] sData2;//or we can delete these charactor arrays after we understand these options of inputs for beam integration
 
   return theElement;
 }
@@ -283,7 +305,7 @@ void * OPS_mixedBeamColumn3d() {
 mixedBeamColumn3d::mixedBeamColumn3d (int tag, int nodeI, int nodeJ, int numSec,
                                       SectionForceDeformation **sec,
                                       BeamIntegration &bi,
-                                      CrdTransf &coordTransf,
+                                      CrdTransf &coordTransf, double yss, double zss,
                                       double massDensPerUnitLength,
                                       int damp, bool geomLin):
   Element(tag,ELE_TAG_mixedBeamColumn3d),
@@ -304,7 +326,7 @@ mixedBeamColumn3d::mixedBeamColumn3d (int tag, int nodeI, int nodeJ, int numSec,
   Ki(0),
   sectionForceFibers(0), commitedSectionForceFibers(0),
   sectionDefFibers(0), commitedSectionDefFibers(0),
-  sectionFlexibility(0), commitedSectionFlexibility(0), sectionForceShapeFcn(0)
+  sectionFlexibility(0), commitedSectionFlexibility(0), sectionForceShapeFcn(0), ys(yss), zs(zss)
 {
   theNodes[0] = 0;
   theNodes[1] = 0;
@@ -465,7 +487,7 @@ mixedBeamColumn3d::mixedBeamColumn3d():
   kv(NDM_NATURAL_WITH_TORSION,NDM_NATURAL_WITH_TORSION), kvcommit(NDM_NATURAL_WITH_TORSION,NDM_NATURAL_WITH_TORSION),
   Ki(0),
   sectionForceFibers(0), commitedSectionForceFibers(0), sectionDefFibers(0), commitedSectionDefFibers(0),
-  sectionFlexibility(0), commitedSectionFlexibility(0), sectionForceShapeFcn(0)
+  sectionFlexibility(0), commitedSectionFlexibility(0), sectionForceShapeFcn(0), ys(0.0), zs(0.0)
 {
   theNodes[0] = 0;
   theNodes[1] = 0;
