@@ -143,7 +143,7 @@ class mixedBeamColumn3d : public Element
     // Attributes that change during the analysis
     Vector V;
     Vector internalForceOpenSees;
-    Vector naturalForce;
+    Vector naturalForce;           //Xinlong: generalized force degrees of freedom
     Vector lastNaturalDisp;
     Matrix Hinv;
     Matrix GMH;
@@ -185,6 +185,8 @@ class mixedBeamColumn3d : public Element
 
 	double ys;     //Xinlong: y coord of shear center relative to centroid
 	double zs;     //Xinlong: z coord of shear center relative to centroid
+	enum { NGF = 7 };          //Xinlong: number of generalized force degrees of freedom
+	enum { NEBD = 6 };         // number of element dof's in the basic system
 };
 
 #endif
