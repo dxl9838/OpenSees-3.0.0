@@ -109,7 +109,7 @@ class mixedBeamColumn3d : public Element
     Vector getd_hat(int sec, const Vector &v, double L, bool geomLinear);
     Matrix getNd1(int sec, const Vector &v, double L, bool geomLinear);
     Matrix getNd2(int sec, double P, double L);
-    Matrix getKg(int sec, double P, double L);
+    Matrix getKg(int sec, Vector P, double L);
     Matrix getMd(int sec, Vector dShapeFcn, Vector dFibers, double L);
 
     // Private Functions - Interaction With The Sections

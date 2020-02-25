@@ -856,7 +856,7 @@ int mixedBeamColumn3d::revertToStart()
     H12 = H12 + initialLength * wt[i] * nd1T[i] * sectionFlexibility[i] * nd2[i];
     H22 = H22 + initialLength * wt[i] * nd2T[i] * sectionFlexibility[i] * nd2[i];
     // Md is zero since deformations are zero
-    Kg  = Kg  + initialLength * wt[i] * this->getKg(i, 0.0, initialLength);
+    Kg  = Kg  + initialLength * wt[i] * this->getKg(i, 0, initialLength); //Xinlong: This isn't necessary. If P=0.0, Kg is zero
   }
 
   // Compute the inverse of the H matrix
@@ -964,7 +964,7 @@ int mixedBeamColumn3d::update() {
   if (geomLinear) {
     currentLength = initialLength;
   } else {
-    currentLength = crdTransf->getDeformedLength();
+    currentLength = initialLength; //Xinlong: need to be cleaned later on
   }
 
   // Compute the natural displacements
@@ -1086,7 +1086,7 @@ int mixedBeamColumn3d::update() {
     H12 = H12 + initialLength * wt[i] * nd1T[i] * sectionFlexibility[i] * nd2[i];
     H22 = H22 + initialLength * wt[i] * nd2T[i] * sectionFlexibility[i] * nd2[i];
     if (!geomLinear) {
-      Kg = Kg  + initialLength * wt[i] * this->getKg(i, sectionForceFibers[i](0), currentLength);
+      Kg = Kg  + initialLength * wt[i] * this->getKg(i, sectionForceFibers[i], currentLength);
         // sectionForceFibers[i](0) is the axial load, P
       Md = Md  + initialLength * wt[i] * this->getMd(i, sectionDefShapeFcn[i], sectionDefFibers[i], currentLength);
     }
@@ -1192,7 +1192,7 @@ int mixedBeamColumn3d::addLoad(ElementalLoad *theLoad, double loadFactor) {
   const Vector &data = theLoad->getData(type, loadFactor);
 
   if (sp == 0) {
-    sp = new Matrix(NDM_SECTION,numSections);
+    sp = new Matrix(NSD,numSections);
     if (sp == 0) {
       opserr << "mixedBeamColumn3d::addLoad -- out of memory\n";
       exit(-1);
@@ -1624,63 +1624,88 @@ Vector mixedBeamColumn3d::getd_hat(int sec, const Vector &v, double L, bool geom
   double xi[maxNumSections];
   beamIntegr->getSectionLocations(numSections, L, xi);
 
-  double x, C, E, F;
-  Vector D_hat(NDM_SECTION);
+  Vector D_hat(NSD);
   D_hat.Zero();
 
-  x = L*xi[sec];
-  C =  1/L;
-  E = -4/L + 6*x/(L*L);
-  F = -2/L + 6*x/(L*L);
+  double oneOverL = 1.0 / L;
+  double xi1 = xi[sec];
+  double dNv1 = 1.0 + 3.0*xi1*xi1 - 4.0*xi1;
+  double ddNv1 = 6.0*xi1*oneOverL - 4.0*oneOverL;
+  double dNv2 = 3.0*xi1*xi1 - 2.0*xi1;
+  double ddNv2 = 6.0*xi1*oneOverL - 2.0*oneOverL;
+  double dNw1 = -dNv1;
+  double ddNw1 = -ddNv1;
+  double dNw2 = -dNv2;
+  double ddNw2 = -ddNv2;
+  double Nf1 = xi1;
+
+  double e0 = oneOverL * v(0); //u'
+  double e1 = ddNv1 * v(1) + ddNv2 * v(2); //v"
+  double e2 = ddNw1 * v(3) + ddNw2 * v(4); //w"
+  double e3 = oneOverL * v(5); //phi'
+  double e4 = dNv1 * v(1) + dNv2 * v(2); //v'
+  double e5 = dNw1 * v(3) + dNw2 * v(4); //w'
+  double e6 = Nf1 * v(5); //phi
 
   if (geomLinear) {
-
-    D_hat(0) = C*v(0);
-    D_hat(1) = E*v(1) + F*v(3);
-    D_hat(2) = E*v(2) + F*v(4);
-
+	  D_hat(0) = e0;
+	  D_hat(1) = e1;
+	  D_hat(2) = -e2;
   } else {
-
-    double A,B;
-    A = 1 - 4*(x/L) + 3*pow(x/L,2);
-    B =   - 2*(x/L) + 3*pow(x/L,2);
-
-    D_hat(0) =  C * v(0) + 0.5 * ( C*C*v(0) ) * v(0) +
-                0.5 * ( A*A*v(1) + A*B*v(3) ) * v(1) +
-                0.5 * ( A*A*v(2) + A*B*v(4) ) * v(2) +
-                0.5 * ( A*B*v(1) + B*B*v(3) ) * v(3) +
-                0.5 * ( A*B*v(2) + B*B*v(4) ) * v(4);
-    D_hat(1) =  E*v(1) + F*v(3);
-    D_hat(2) =  E*v(2) + F*v(4);
-
+	  D_hat(0) = e0 + 0.5*(e4*e4 + e5 * e5) + (zs*e4 - ys * e5)*e3;
+	  D_hat(1) = e1 + e2 * e6;
+	  D_hat(2) = -e2 + e1 * e6;
+	  D_hat(3) = 0.5*e3*e3;
+	  D_hat(4) = e3;
   }
 
   return D_hat;
 }
 
-Matrix mixedBeamColumn3d::getKg(int sec, double P, double L) {
+Matrix mixedBeamColumn3d::getKg(int sec, Vector P, double L) {
   double xi[maxNumSections];
   beamIntegr->getSectionLocations(numSections, L, xi);
 
-  double temp_x, temp_A, temp_B;
-
-  temp_x = L * xi[sec];
-
-  Matrix kg(NDM_NATURAL,NDM_NATURAL);
+  Matrix kg(NEBD,NEBD);
+  Matrix N2(NGF, NEBD);
+  Matrix Gmax(NGF, NGF);
   kg.Zero();
+  N2.Zero();
+  Gmax.Zero();
 
-  temp_A = 1 - 4 * temp_x / L + 3 * ( temp_x * temp_x ) / ( L * L );
-  temp_B = - 2 * temp_x / L + 3 * ( temp_x * temp_x ) / ( L * L );
+  double oneOverL = 1.0 / L;
+  double xi1 = xi[sec];
+  double dNv1 = 1.0 + 3.0*xi1*xi1 - 4.0*xi1;
+  double ddNv1 = 6.0*xi1*oneOverL - 4.0*oneOverL;
+  double dNv2 = 3.0*xi1*xi1 - 2.0*xi1;
+  double ddNv2 = 6.0*xi1*oneOverL - 2.0*oneOverL;
+  double dNw1 = -dNv1;
+  double ddNw1 = -ddNv1;
+  double dNw2 = -dNv2;
+  double ddNw2 = -ddNv2;
+  double Nf1 = xi1;
 
-  kg(0,0) = P / ( L * L );
-  kg(1,1) = P * temp_A * temp_A;
-  kg(1,3) = P * temp_A * temp_B;
-  kg(2,2) = P * temp_A * temp_A;
-  kg(2,4) = P * temp_A * temp_B;
-  kg(3,1) = P * temp_A * temp_B;
-  kg(3,3) = P * temp_B * temp_B;
-  kg(4,2) = P * temp_A * temp_B;
-  kg(4,4) = P * temp_B * temp_B;
+  //Matrix Ndeltad2-------------------------------------------------------
+  N2(0, 0) = oneOverL;
+  N2(1, 1) = dNv1;
+  N2(1, 2) = dNv2;
+  N2(2, 3) = dNw1;
+  N2(2, 4) = dNw2;
+  N2(3, 1) = ddNv1;
+  N2(3, 2) = ddNv2;
+  N2(4, 3) = ddNw1;
+  N2(4, 4) = ddNw2;
+  N2(5, 5) = Nf1;
+  N2(6, 5) = oneOverL;
+
+  Gmax(1, 1) = Gmax(2, 2) = P(0); //N
+  Gmax(5, 4) = Gmax(4, 5) = P(1); //Mz
+  Gmax(5, 3) = Gmax(3, 5) = P(2); //My
+  Gmax(6, 1) = Gmax(1, 6) = P(0)*zs; //Nzs
+  Gmax(6, 2) = Gmax(2, 6) = -P(0)*ys; //-Nys
+  Gmax(6, 6) = P(3); //W
+
+  kg.addMatrixTripleProduct(0.0, N2, Gmax, 1.0);
 
   return kg;
 }
@@ -1689,19 +1714,19 @@ Matrix mixedBeamColumn3d::getMd(int sec, Vector dShapeFcn, Vector dFibers, doubl
   double xi[maxNumSections];
   beamIntegr->getSectionLocations(numSections, L, xi);
 
-  double x, A, B;
-
-  Matrix md(NDM_NATURAL,NDM_NATURAL);
+  Matrix md(NGF,NEBD);
   md.Zero();
 
-  x = L*xi[sec];
-  A =  ( x/L - 2*pow(x/L,2) + pow(x/L,3) )*L;
-  B =          (-pow(x/L,2) + pow(x/L,3) )*L;
+  double x = L*xi[sec];
+  double Nv1 = x * (1 - x / L)*(1 - x / L);
+  double Nv2 = x * x / L * (x / L - 1);
+  double Nw1 = -Nv1;
+  double Nw2 = -Nv2;
 
-  md(0,1) = A * ( dShapeFcn(1) - dFibers(1) );
-  md(0,2) = A * ( dShapeFcn(2) - dFibers(2) );
-  md(0,3) = B * ( dShapeFcn(1) - dFibers(1) );
-  md(0,4) = B * ( dShapeFcn(2) - dFibers(2) );
+  md(0,1) = Nv1 * ( dShapeFcn(1) - dFibers(1) );
+  md(0,2) = Nv2 * ( dShapeFcn(1) - dFibers(1) );
+  md(0,3) = -Nw1 * ( dShapeFcn(2) - dFibers(2) );
+  md(0,4) = -Nw2 * ( dShapeFcn(2) - dFibers(2) );
 
   return md;
 }
