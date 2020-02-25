@@ -58,9 +58,9 @@
 #include <RegularizedHingeIntegration.h>
 
 // Constants that define the dimensionality
-#define  NDM   3                       // dimension of the problem (3d)
-#define  NND   6                       // number of nodal dof's
-#define  NEGD  12                      // number of element global dof's
+//#define  NDM   3                       // dimension of the problem (3d)
+//#define  NND   6                       // number of nodal dof's
+//#define  NEGD  12                      // number of element global dof's
 #define  NDM_SECTION  3                // number of section dof's without torsion
 #define  NDM_NATURAL  5                // number of element dof's in the basic system without torsion
 #define  NDM_NATURAL_WITH_TORSION  6   // number of element dof's in the basic system with torsion
@@ -149,13 +149,13 @@ void * OPS_mixedBeamColumn3d() {
   int numData;
 
   // Check the number of dimensions
-  if (OPS_GetNDM() != NDM) {
+  if (OPS_GetNDM() != 3) {
      opserr << "ERROR: mixedBeamColumn3d: invalid number of dimensions\n";
    return 0;
   }
 
   // Check the number of degrees of freedom
-  if (OPS_GetNDF() != NND) {
+  if (OPS_GetNDF() != 6) {
      opserr << "ERROR: mixedBeamColumn3d: invalid number of degrees of freedom\n";
    return 0;
   }
@@ -390,17 +390,17 @@ mixedBeamColumn3d::mixedBeamColumn3d (int tag, int nodeI, int nodeJ, int numSec,
   commitedSectionFlexibility = new Matrix [numSections];
 
   for (int i = 0; i < numSections; i++){
-    sectionForceFibers[i] = Vector(NDM_SECTION);
+    sectionForceFibers[i] = Vector(NSD);
     sectionForceFibers[i].Zero();
-    commitedSectionForceFibers[i] = Vector(NDM_SECTION);
+    commitedSectionForceFibers[i] = Vector(NSD);
     commitedSectionForceFibers[i].Zero();
-    sectionDefFibers[i] = Vector(NDM_SECTION);
+    sectionDefFibers[i] = Vector(NSD);
     sectionDefFibers[i].Zero();
-    commitedSectionDefFibers[i] = Vector(NDM_SECTION);
+    commitedSectionDefFibers[i] = Vector(NSD);
     commitedSectionDefFibers[i].Zero();
-    sectionFlexibility[i] = Matrix(NDM_SECTION,NDM_SECTION);
+    sectionFlexibility[i] = Matrix(NSD,NSD);
     sectionFlexibility[i].Zero();
-    commitedSectionFlexibility[i] = Matrix(NDM_SECTION,NDM_SECTION);
+    commitedSectionFlexibility[i] = Matrix(NSD,NSD);
     commitedSectionFlexibility[i].Zero();
   }
 
@@ -461,8 +461,8 @@ mixedBeamColumn3d::mixedBeamColumn3d (int tag, int nodeI, int nodeJ, int numSec,
 
   int i;
   for ( i=0; i<maxNumSections; i++ ){
-    nd1T[i] = Matrix(NDM_NATURAL,NDM_SECTION);
-    nd2T[i] = Matrix(NDM_NATURAL,NDM_SECTION);
+    nd1T[i] = Matrix(NGF,NSD);
+    nd2T[i] = Matrix(NEBD,NSD);
   }
 
 }
@@ -505,17 +505,17 @@ mixedBeamColumn3d::mixedBeamColumn3d():
   commitedSectionFlexibility = new Matrix [numSections];
 
   for (int i = 0; i < numSections; i++){
-    sectionForceFibers[i] = Vector(NDM_SECTION);
+    sectionForceFibers[i] = Vector(NSD);
     sectionForceFibers[i].Zero();
-    commitedSectionForceFibers[i] = Vector(NDM_SECTION);
+    commitedSectionForceFibers[i] = Vector(NSD);
     commitedSectionForceFibers[i].Zero();
-    sectionDefFibers[i] = Vector(NDM_SECTION);
+    sectionDefFibers[i] = Vector(NSD);
     sectionDefFibers[i].Zero();
-    commitedSectionDefFibers[i] = Vector(NDM_SECTION);
+    commitedSectionDefFibers[i] = Vector(NSD);
     commitedSectionDefFibers[i].Zero();
-    sectionFlexibility[i] = Matrix(NDM_SECTION,NDM_SECTION);
+    sectionFlexibility[i] = Matrix(NSD,NSD);
     sectionFlexibility[i].Zero();
-    commitedSectionFlexibility[i] = Matrix(NDM_SECTION,NDM_SECTION);
+    commitedSectionFlexibility[i] = Matrix(NSD,NSD);
     commitedSectionFlexibility[i].Zero();
   }
 
@@ -573,8 +573,8 @@ mixedBeamColumn3d::mixedBeamColumn3d():
 
   int i;
   for ( i=0; i<maxNumSections; i++ ){
-    nd1T[i] = Matrix(NDM_NATURAL,NDM_SECTION);
-    nd2T[i] = Matrix(NDM_NATURAL,NDM_SECTION);
+    nd1T[i] = Matrix(NGF,NSD);
+    nd2T[i] = Matrix(NEBD,NSD);
   }
 
 }
@@ -803,29 +803,25 @@ int mixedBeamColumn3d::revertToStart()
   beamIntegr->getSectionWeights(numSections, initialLength, wt);
 
   // Vector of zeros to use at initial natural displacements
-  Vector myZeros(NDM_NATURAL);
+  Vector myZeros(NEBD);
   myZeros.Zero();
 
   // Set initial shape functions
   for ( i = 0; i < numSections; i++ ){
-    nldhat[i] = this->getNld_hat(i, myZeros, initialLength, geomLinear);
+    nldhat[i] = this->getNld_hat(i, myZeros, initialLength, geomLinear); //Xinlong: This need to be modified to consider Nldhat1 and Nldhat2
     nd1[i] = this->getNd1(i, myZeros, initialLength, geomLinear);
     nd2[i] = this->getNd2(i, 0, initialLength);
-
-    for( j = 0; j < NDM_SECTION; j++ ){
-      for( k = 0; k < NDM_NATURAL; k++ ){
-        nd1T[i](k,j) = nd1[i](j,k);
-        nd2T[i](k,j) = nd2[i](j,k);
-      }
-    }
+	nd1T[i].addMatrixTranspose(0.0, nd1[i], 1.0);  //Xinlong: nd1T=nd1T*0.0+nd1'*1.0
+	nd2T[i].addMatrixTranspose(0.0, nd2[i], 1.0);
   }
 
   // Set initial and committed section flexibility and GJ
-  Matrix ks(NDM_SECTION,NDM_SECTION);
-  double GJ;
+  Matrix ks(NSD,NSD);
+  //double GJ;
   for ( i = 0; i < numSections; i++ ){
-    getSectionTangent(i,2,ks,GJ);
-    invertMatrix(NDM_SECTION,ks,sectionFlexibility[i]);
+    //getSectionTangent(i,2,ks,GJ);
+	ks = sections[i]->getInitialTangent();
+    invertMatrix(NSD,ks,sectionFlexibility[i]);
     commitedSectionFlexibility[i] = sectionFlexibility[i];
   }
 
@@ -838,13 +834,13 @@ int mixedBeamColumn3d::revertToStart()
   }
 
   // Compute the following matrices: G, G2, H, H12, H22, Md, Kg
-  Matrix G(NDM_NATURAL,NDM_NATURAL);
-  Matrix G2(NDM_NATURAL,NDM_NATURAL);
-  Matrix H(NDM_NATURAL,NDM_NATURAL);
-  Matrix H12(NDM_NATURAL,NDM_NATURAL);
-  Matrix H22(NDM_NATURAL,NDM_NATURAL);
-  Matrix Md(NDM_NATURAL,NDM_NATURAL);
-  Matrix Kg(NDM_NATURAL,NDM_NATURAL);
+  Matrix G(NGF,NEBD);
+  Matrix G2(NEBD,NEBD);
+  Matrix H(NGF,NGF);
+  Matrix H12(NGF,NEBD);
+  Matrix H22(NEBD,NEBD);
+  Matrix Md(NGF,NEBD);
+  Matrix Kg(NEBD,NEBD);
 
   G.Zero();
   G2.Zero();
@@ -864,7 +860,7 @@ int mixedBeamColumn3d::revertToStart()
   }
 
   // Compute the inverse of the H matrix
-  invertMatrix(NDM_NATURAL, H, Hinv);
+  invertMatrix(NGF, H, Hinv);
   commitedHinv = Hinv;
 
   // Compute the GMH matrix ( G + Md - H12 ) and its transpose
@@ -873,15 +869,11 @@ int mixedBeamColumn3d::revertToStart()
   commitedGMH = GMH;
 
   // Compute the transposes of the following matrices: G2, GMH
-  Matrix G2T(NDM_NATURAL,NDM_NATURAL);
-  Matrix GMHT(NDM_NATURAL,NDM_NATURAL);
-  for( i = 0; i < NDM_NATURAL; i++ ){
-    for( j = 0; j < NDM_NATURAL; j++ ){
-      G2T(i,j) = G2(j,i);
-      GMHT(i,j) = GMH(j,i);
-    }
-  }
-
+  Matrix G2T(NEBD,NEBD);
+  Matrix GMHT(NEBD,NGF);
+  G2T.addMatrixTranspose(0.0, G2, 1.0);  //Xinlong: G2T=G2T*0.0+G2'*1.0
+  GMHT.addMatrixTranspose(0.0, GMH, 1.0);
+  /*
   // Compute the stiffness matrix without the torsion term
   Matrix K_temp_noT(NDM_NATURAL,NDM_NATURAL);
   K_temp_noT = ( Kg + G2 + G2T - H22 ) + GMHT * Hinv * GMH;
@@ -896,6 +888,9 @@ int mixedBeamColumn3d::revertToStart()
   }
 
   kv(5,5) =  GJ/initialLength; // Torsional Stiffness GJ/L
+  */
+  kv.Zero();
+  kv = (Kg + G2 + G2T - H22) + GMHT * Hinv * GMH;
   kvcommit = kv;
 
   Matrix kvOpenSees = transformNaturalCoordsT*kv*transformNaturalCoords;

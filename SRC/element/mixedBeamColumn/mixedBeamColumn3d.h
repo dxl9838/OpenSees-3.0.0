@@ -186,6 +186,10 @@ class mixedBeamColumn3d : public Element
 	double ys;     //Xinlong: y coord of shear center relative to centroid
 	double zs;     //Xinlong: z coord of shear center relative to centroid
 	enum { NGF = 7 };          //Xinlong: number of generalized force degrees of freedom
+	enum { NSD = 5 };          //Xinlong: number of section dofs
+	enum { NDM = 3 };          // dimension of the problem (3d)
+	enum { NND = 6 };          // number of nodal dof's
+	enum { NEGD = 12 };        // number of element global dof's
 	enum { NEBD = 6 };         // number of element dof's in the basic system
 };
 
