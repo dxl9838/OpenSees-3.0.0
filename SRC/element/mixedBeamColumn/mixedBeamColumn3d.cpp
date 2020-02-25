@@ -893,8 +893,8 @@ int mixedBeamColumn3d::revertToStart()
   kv = (Kg + G2 + G2T - H22) + GMHT * Hinv * GMH;
   kvcommit = kv;
 
-  Matrix kvOpenSees = transformNaturalCoordsT*kv*transformNaturalCoords;
-  Ki = new Matrix(crdTransf->getInitialGlobalStiffMatrix(kvOpenSees));
+  //Matrix kvOpenSees = transformNaturalCoordsT*kv*transformNaturalCoords;
+  Ki = new Matrix(crdTransf->getInitialGlobalStiffMatrix(kv));
 
   // Vector V is zero at initial state
   V.Zero();
@@ -933,13 +933,13 @@ const Matrix & mixedBeamColumn3d::getTangentStiff(void) {
     this->revertToStart();
   }
   crdTransf->update();  // Will remove once we clean up the corotational 3d transformation -- MHS
-  Matrix ktOpenSees = transformNaturalCoordsT*kv*transformNaturalCoords;
-  return crdTransf->getGlobalStiffMatrix(ktOpenSees,internalForceOpenSees);
+  //Matrix ktOpenSees = transformNaturalCoordsT*kv*transformNaturalCoords;
+  return crdTransf->getGlobalStiffMatrix(kv,internalForceOpenSees);
 }
 
 const Vector & mixedBeamColumn3d::getResistingForce(void) {
   crdTransf->update();  // Will remove once we clean up the corotational 3d transformation -- MHS
-  Vector p0Vec(p0, NDM_NATURAL);
+  Vector p0Vec(p0, 5);
   return crdTransf->getGlobalResistingForce(internalForceOpenSees, p0Vec);
 }
 
@@ -968,17 +968,17 @@ int mixedBeamColumn3d::update() {
   }
 
   // Compute the natural displacements
-  Vector naturalDispWithTorsion = crdTransf->getBasicTrialDisp();
-  naturalDispWithTorsion = transformNaturalCoords*naturalDispWithTorsion;
+  Vector naturalDisp = crdTransf->getBasicTrialDisp();
+  //naturalDispWithTorsion = transformNaturalCoords*naturalDispWithTorsion;
     // convert to the arrangement of natural deformations that the element likes
-
+  /*
   Vector naturalDisp(NDM_NATURAL);
   for ( i = 0; i < NDM_NATURAL; i++ ) {
     naturalDisp(i) = naturalDispWithTorsion(i); //all but the torsional component
   }
   double twist = naturalDispWithTorsion(5);
-
-  Vector naturalIncrDeltaDisp(NDM_NATURAL);
+  */
+  Vector naturalIncrDeltaDisp(NEBD);
   naturalIncrDeltaDisp = naturalDisp - lastNaturalDisp;
   lastNaturalDisp = naturalDisp;
 
@@ -992,7 +992,7 @@ int mixedBeamColumn3d::update() {
   //Vector sectionForceShapeFcn[numSections];
   sectionForceShapeFcn = new Vector[numSections];
   for ( i = 0; i < numSections; i++ ) {
-    sectionForceShapeFcn[i] = Vector(NDM_SECTION);
+    sectionForceShapeFcn[i] = Vector(NSD);
   }
 
   // Compute shape functions and their transposes
@@ -1008,12 +1008,8 @@ int mixedBeamColumn3d::update() {
     }
 
     // Transpose of shape functions
-    for( j = 0; j < NDM_SECTION; j++ ){
-      for( k = 0; k < NDM_NATURAL; k++ ){
-        nd1T[i](k,j) = nd1[i](j,k);
-        nd2T[i](k,j) = nd2[i](j,k);
-      }
-    }
+	nd1T[i].addMatrixTranspose(0.0, nd1[i], 1.0);  //Xinlong: nd1T=nd1T*0.0+nd1'*1.0
+	nd2T[i].addMatrixTranspose(0.0, nd2[i], 1.0);
   }
 
   // Update natural force
@@ -1030,7 +1026,7 @@ int mixedBeamColumn3d::update() {
     sectionForceShapeFcn[i] = nd1[i] * naturalForce;
     if (sp != 0) {
       const Matrix &s_p = *sp;
-      for ( j = 0; j < NDM_SECTION; j++ ) {
+      for ( j = 0; j < NSD; j++ ) {
         sectionForceShapeFcn[i](j) += s_p(j,i);
       }
     }
