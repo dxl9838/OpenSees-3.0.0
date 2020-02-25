@@ -987,8 +987,8 @@ int mixedBeamColumn3d::update() {
   beamIntegr->getSectionWeights(numSections, initialLength, wt);
 
   // Define Variables
-  double GJ;
-  double torsionalForce;
+  //double GJ;
+  //double torsionalForce;
   //Vector sectionForceShapeFcn[numSections];
   sectionForceShapeFcn = new Vector[numSections];
   for ( i = 0; i < numSections; i++ ) {
@@ -1033,33 +1033,39 @@ int mixedBeamColumn3d::update() {
     sectionDefFibers[i] = sectionDefFibers[i] + sectionFlexibility[i] * ( sectionForceShapeFcn[i] - sectionForceFibers[i] );
 
     // Send section deformation to section object
-    double torsionalStrain = twist/currentLength;
-    setSectionDeformation(i,sectionDefFibers[i],torsionalStrain);
+    //double torsionalStrain = twist/currentLength;
+    //setSectionDeformation(i,sectionDefFibers[i],torsionalStrain);
+	if (sections[i]->setTrialSectionDeformation(sectionDefFibers[i]) < 0) {
+		opserr << "mixedBeamColumn3d::update() - section failed in setTrial\n";
+		return -1;
+	}
 
     // Get section force vector
-    double tempTorsionalForce;
-    getSectionStress(i,sectionForceFibers[i],tempTorsionalForce);
-    if (i == 0) {
-      torsionalForce = tempTorsionalForce;
-    }
+    //double tempTorsionalForce;
+    //getSectionStress(i,sectionForceFibers[i],tempTorsionalForce);
+    //if (i == 0) {
+    //  torsionalForce = tempTorsionalForce;
+    //}
+	sectionForceFibers[i] = sections[i]->getStressResultant();
 
     // Get section tangent matrix
-    Matrix ks(NDM_SECTION,NDM_SECTION);
-    getSectionTangent(i,1,ks,GJ);
+    Matrix ks(NSD,NSD);
+    //getSectionTangent(i,1,ks,GJ);
+	ks = sections[i]->getSectionTangent();
 
     // Compute section flexibility matrix
-    invertMatrix(NDM_SECTION,ks,sectionFlexibility[i]);
+    invertMatrix(NSD,ks,sectionFlexibility[i]);
   }
 
   // Compute the following matrices: V, V2, G, G2, H, H12, H22, Md, Kg
-  Vector V2(NDM_NATURAL);
-  Matrix G(NDM_NATURAL,NDM_NATURAL);
-  Matrix G2(NDM_NATURAL,NDM_NATURAL);
-  Matrix H(NDM_NATURAL,NDM_NATURAL);
-  Matrix H12(NDM_NATURAL,NDM_NATURAL);
-  Matrix H22(NDM_NATURAL,NDM_NATURAL);
-  Matrix Md(NDM_NATURAL,NDM_NATURAL);
-  Matrix Kg(NDM_NATURAL,NDM_NATURAL);
+  Vector V2(NEBD);
+  Matrix G(NGF,NEBD);
+  Matrix G2(NEBD,NEBD);
+  Matrix H(NGF,NGF);
+  Matrix H12(NGF,NEBD);
+  Matrix H22(NEBD,NEBD);
+  Matrix Md(NGF,NEBD);
+  Matrix Kg(NEBD,NEBD);
 
   V.Zero();
   V2.Zero();
@@ -1087,26 +1093,22 @@ int mixedBeamColumn3d::update() {
   }
 
   // Compute the inverse of the H matrix
-  invertMatrix(NDM_NATURAL, H, Hinv);
+  invertMatrix(NGF, H, Hinv);
 
   // Compute the GMH matrix ( G + Md - H12 ) and its transpose
   GMH = G + Md - H12;
   //GMH = G; // Omit P-small delta
 
   // Compute the transposes of the following matrices: G, G2, GMH
-  Matrix GT(NDM_NATURAL,NDM_NATURAL);
-  Matrix G2T(NDM_NATURAL,NDM_NATURAL);
-  Matrix GMHT(NDM_NATURAL,NDM_NATURAL);
-  for( i = 0; i < NDM_NATURAL; i++ ){
-    for( j = 0; j < NDM_NATURAL; j++ ){
-      GT(i,j) = G(j,i);
-      G2T(i,j) = G2(j,i);
-      GMHT(i,j) = GMH(j,i);
-    }
-  }
+  Matrix GT(NEBD,NGF);
+  Matrix G2T(NEBD,NEBD);
+  Matrix GMHT(NEBD,NGF);
+  GT.addMatrixTranspose(0.0, G, 1.0);
+  G2T.addMatrixTranspose(0.0, G2, 1.0);  //Xinlong: G2T=G2T*0.0+G2'*1.0
+  GMHT.addMatrixTranspose(0.0, GMH, 1.0);
 
   // Compute new internal force
-  Vector internalForce(NDM_NATURAL);
+  Vector internalForce(NEBD);
   internalForce.Zero();
 
   if (geomLinear) {
@@ -1114,7 +1116,7 @@ int mixedBeamColumn3d::update() {
   } else {
     internalForce = GT * naturalForce + V2 + GMHT * Hinv * V;
   }
-
+  /*
   // Compute internal force for OpenSees ( i.e., add torsion and rearrange )
   for ( i = 0; i < NDM_NATURAL; i++ ) {
     internalForceOpenSees(i) = internalForce(i);
@@ -1139,6 +1141,14 @@ int mixedBeamColumn3d::update() {
   }
 
   kv(5,5) =  GJ/currentLength; // Torsional Stiffness GJ/L
+  */
+  kv.Zero();
+  if (geomLinear) {
+	  kv = (Kg + G2 + G2T - H22) + GMHT * Hinv * GMH;
+  }
+  else {
+	  kv = (Kg + G2 + G2T - H22) + GMHT * Hinv * GMH;
+  }
 
   return 0;
 }
