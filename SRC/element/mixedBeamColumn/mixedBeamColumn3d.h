@@ -142,8 +142,8 @@ class mixedBeamColumn3d : public Element
 
     // Attributes that change during the analysis
     Vector V;
-    Vector internalForceOpenSees;
-    Vector naturalForce;           //Xinlong: generalized force degrees of freedom
+    Vector internalForce;          //Xinlong: internal resisting force (6)
+    Vector naturalForce;           //Xinlong: generalized force degrees of freedom (7)
     Vector lastNaturalDisp;
     Matrix Hinv;
     Matrix GMH;
@@ -155,7 +155,7 @@ class mixedBeamColumn3d : public Element
 
     // Committed versions
     Vector committedV;
-    Vector committedInternalForceOpenSees;
+    Vector committedInternalForce;
     Vector commitedNaturalForce;
     Vector commitedLastNaturalDisp;
     Matrix commitedHinv;
@@ -171,8 +171,8 @@ class mixedBeamColumn3d : public Element
     static Matrix theMatrix;
     static Vector theVector;
     static double workArea[];
-    static Matrix transformNaturalCoords;
-    static Matrix transformNaturalCoordsT;
+    //static Matrix transformNaturalCoords;
+    //static Matrix transformNaturalCoordsT;
         // matrix to transform the natural coordinates from what the coordinate transformation uses and what the element uses
 
     // These variable are always recomputed, so there is no need to store them for each instance of the element
