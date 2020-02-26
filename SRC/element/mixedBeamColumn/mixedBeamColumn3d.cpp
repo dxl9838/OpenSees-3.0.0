@@ -810,7 +810,7 @@ int mixedBeamColumn3d::revertToStart()
   for ( i = 0; i < numSections; i++ ){
     nldhat[i] = this->getNld_hat(i, myZeros, initialLength, geomLinear); //Xinlong: This need to be modified to consider Nldhat1 and Nldhat2
     nd1[i] = this->getNd1(i, myZeros, initialLength, geomLinear);
-    nd2[i] = this->getNd2(i, 0, initialLength);
+    nd2[i] = this->getNd2(i, 0.0, initialLength);
 	nd1T[i].addMatrixTranspose(0.0, nd1[i], 1.0);  //Xinlong: nd1T=nd1T*0.0+nd1'*1.0
 	nd2T[i].addMatrixTranspose(0.0, nd2[i], 1.0);
   }
@@ -1717,7 +1717,7 @@ Matrix mixedBeamColumn3d::getMd(int sec, Vector dShapeFcn, Vector dFibers, doubl
   Matrix md(NGF,NEBD);
   md.Zero();
 
-  double x = L*xi[sec];
+  double x = L * xi[sec];
   double Nv1 = x * (1 - x / L)*(1 - x / L);
   double Nv2 = x * x / L * (x / L - 1);
   double Nw1 = -Nv1;
@@ -1735,40 +1735,66 @@ Matrix mixedBeamColumn3d::getNld_hat(int sec, const Vector &v, double L, bool ge
   double xi[maxNumSections];
   beamIntegr->getSectionLocations(numSections, L, xi);
 
-  double x, C, E, F;
-  Matrix Nld_hat(NDM_SECTION,NDM_NATURAL);
+  Matrix Nld_hat(NSD,NEBD);
+  Matrix N1(NSD, NGF);
+  Matrix N2(NGF, NEBD);
   Nld_hat.Zero();
+  N1.Zero();
+  N2.Zero();
 
-  x = L*xi[sec];
+  double oneOverL = 1.0 / L;
+  double xi1 = xi[sec];
+  double dNv1 = 1.0 + 3.0*xi1*xi1 - 4.0*xi1;
+  double ddNv1 = 6.0*xi1*oneOverL - 4.0*oneOverL;
+  double dNv2 = 3.0*xi1*xi1 - 2.0*xi1;
+  double ddNv2 = 6.0*xi1*oneOverL - 2.0*oneOverL;
+  double dNw1 = -dNv1;
+  double ddNw1 = -ddNv1;
+  double dNw2 = -dNv2;
+  double ddNw2 = -ddNv2;
+  double Nf1 = xi1;
 
-  C =  1/L;
-  E = -4/L + 6*x/(L*L);
-  F = -2/L + 6*x/(L*L);
+  double dv = dNv1 * v(1) + dNv2 * v(2); //v'
+  double ddv = ddNv1 * v(1) + ddNv2 * v(2); //v"
+  double dw = dNw1 * v(3) + dNw2 * v(4); //w'
+  double ddw = ddNw1 * v(3) + ddNw2 * v(4); //w"
+  double f = Nf1 * v(5); //phi
+  double df = oneOverL * v(5); //phi'
 
   if (geomLinear) {
-
-    Nld_hat(0,0) = C;
-    Nld_hat(1,1) = E;
-    Nld_hat(1,3) = F;
-    Nld_hat(2,2) = E;
-    Nld_hat(2,4) = F;
-
+	  //Matrix Ndeltad1-------------------------------------------------------
+	  N1(0, 0) = 1.0;
+	  N1(1, 3) = 1.0;
+	  N1(2, 4) = -1.0;
   } else {
-
-    double A,B;
-    A = 1 - 4 * ( x / L ) + 3 * pow ( ( x / L ) , 2 );
-    B =   - 2 * ( x / L ) + 3 * pow ( ( x / L ) , 2 );
-
-    Nld_hat(0,0) = C + C*C*v(0);
-    Nld_hat(0,1) = A*A*v(1) + A*B*v(3);
-    Nld_hat(0,2) = A*A*v(2) + A*B*v(4);
-    Nld_hat(0,3) = A*B*v(1) + B*B*v(3);
-    Nld_hat(0,4) = A*B*v(2) + B*B*v(4);
-    Nld_hat(1,1) = E;
-    Nld_hat(1,3) = F;
-    Nld_hat(2,2) = E;
-    Nld_hat(2,4) = F;
+	  //Matrix Ndeltad1-------------------------------------------------------
+	  N1(0, 0) = 1.0;
+	  N1(0, 1) = dv + zs * df;
+	  N1(0, 2) = dw - ys * df;
+	  N1(0, 6) = zs * dv - ys * dw;
+	  N1(1, 3) = 1.0;
+	  N1(1, 4) = f;
+	  N1(1, 5) = ddw;
+	  N1(2, 3) = f;
+	  N1(2, 4) = -1.0;
+	  N1(2, 5) = ddv;
+	  N1(3, 6) = df;
+	  N1(4, 6) = 1.0;
   }
+  //Matrix Ndeltad2-------------------------------------------------------
+  N2(0, 0) = oneOverL;
+  N2(1, 1) = dNv1;
+  N2(1, 2) = dNv2;
+  N2(2, 3) = dNw1;
+  N2(2, 4) = dNw2;
+  N2(3, 1) = ddNv1;
+  N2(3, 2) = ddNv2;
+  N2(4, 3) = ddNw1;
+  N2(4, 4) = ddNw2;
+  N2(5, 5) = Nf1;
+  N2(6, 5) = oneOverL;
+
+  Nld_hat.addMatrixProduct(0.0, N1, N2, 1.0); //N1*N2
 
   return Nld_hat;
 }
@@ -1777,20 +1803,19 @@ Matrix mixedBeamColumn3d::getNd2(int sec, double P, double L) {
   double xi[maxNumSections];
   beamIntegr->getSectionLocations(numSections, L, xi);
 
-  double temp_x, temp_A, temp_B;
-
-  temp_x = L * xi[sec];
-
-  Matrix Nd2(NDM_SECTION,NDM_NATURAL);
+  Matrix Nd2(NSD,NEBD);
   Nd2.Zero();
 
-  temp_A = L * ( temp_x / L - 2 * pow( temp_x / L, 2 ) + pow( temp_x / L, 3 ) );
-  temp_B = L * ( -pow( temp_x / L, 2 ) + pow( temp_x / L, 3 ) );
+  double x = L * xi[sec];
+  double Nv1 = x * (1 - x / L)*(1 - x / L);
+  double Nv2 = x * x / L * (x / L - 1);
+  double Nw1 = -Nv1;
+  double Nw2 = -Nv2;
 
-  Nd2(1,1) = P * temp_A;
-  Nd2(1,3) = P * temp_B;
-  Nd2(2,2) = P * temp_A;
-  Nd2(2,4) = P * temp_B;
+  Nd2(1, 1) = P * Nv1;
+  Nd2(1, 2) = P * Nv2;
+  Nd2(2, 3) = -P * Nw1;
+  Nd2(2, 4) = -P * Nw2;
 
   return Nd2;
 }
@@ -1799,41 +1824,38 @@ Matrix mixedBeamColumn3d::getNd1(int sec, const Vector &v, double L, bool geomLi
   double xi[maxNumSections];
   beamIntegr->getSectionLocations(numSections, L, xi);
 
-  double x = L*xi[sec];
-
-  Matrix Nd1(NDM_SECTION,NDM_NATURAL);
+  Matrix Nd1(NSD,NGF);
   Nd1.Zero();
 
+  double x = L * xi[sec];
+  double Nv1 = x * (1 - x / L)*(1 - x / L);
+  double Nv2 = x * x / L * (x / L - 1);
+  double Nw1 = -Nv1;
+  double Nw2 = -Nv2;
+
   if (geomLinear) {
-
-    Nd1(0,0)   = 1.0;
-    Nd1(1,1)   = -x/L + 1.0;
-    Nd1(1,3)   =  x/L;
-    Nd1(2,2)   = -x/L + 1.0;
-    Nd1(2,4)   =  x/L;
-
+	  Nd1(0, 0) = 1.0;
+	  Nd1(1, 1) = x / L - 1.0;
+	  Nd1(1, 2) = x / L;
+	  Nd1(2, 3) = x / L - 1.0;
+	  Nd1(2, 4) = x / L;
+	  Nd1(3, 6) = 1.0;
+	  Nd1(4, 5) = 1.0;
   } else {
-
-    double A,B;
-
-    A = L * ( x/L - 2*pow(x/L,2) + pow(x/L,3) ) * v[1]
-             + L * ( -pow(x/L,2) + pow(x/L,3) ) * v[3];
-
-    B = L * ( x/L - 2*pow(x/L,2) + pow(x/L,3) ) * v[2]
-             + L * ( -pow(x/L,2) + pow(x/L,3) ) * v[4];
-
-    Nd1(0,0)   = 1.0;
-    Nd1(1,0)   = A;
-    Nd1(1,1)   = -x/L + 1.0;
-    Nd1(1,3)   =  x/L;
-    Nd1(2,0)   = B;
-    Nd1(2,2)   = -x/L + 1.0;
-    Nd1(2,4)   =  x/L;
+	  Nd1(0, 0) = 1.0;
+	  Nd1(1, 0) = Nv1 * v(1) + Nv2 * v(2);
+	  Nd1(1, 1) = x / L - 1.0;
+	  Nd1(1, 2) = x / L;
+	  Nd1(2, 0) = -Nw1 * v(3) - Nw2 * v(4);
+	  Nd1(2, 3) = x / L - 1.0;
+	  Nd1(2, 4) = x / L;
+	  Nd1(3, 6) = 1.0;
+	  Nd1(4, 5) = 1.0;
   }
 
   return Nd1;
 }
-
+/*
 void mixedBeamColumn3d::getSectionTangent(int sec,int type,Matrix &kSection,
                                           double &GJ) {
   int order = sections[sec]->getOrder();
@@ -1980,7 +2002,7 @@ void mixedBeamColumn3d::setSectionDeformation(int sec,Vector &defSection,
   // Set the section deformations
   int res = sections[sec]->setTrialSectionDeformation(sectionDeformation);
 }
-
+*/
 
 int mixedBeamColumn3d::sendSelf(int commitTag, Channel &theChannel) {
   // @todo write mixedBeamColumn3d::sendSelf

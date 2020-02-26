@@ -113,9 +113,9 @@ class mixedBeamColumn3d : public Element
     Matrix getMd(int sec, Vector dShapeFcn, Vector dFibers, double L);
 
     // Private Functions - Interaction With The Sections
-    void getSectionTangent(int sec,int type,Matrix &kSection,double &GJ);
-    void getSectionStress(int sec,Vector &fSection,double &torsion);
-    void setSectionDeformation(int sec,Vector &defSection,double &twist);
+    //void getSectionTangent(int sec,int type,Matrix &kSection,double &GJ);
+    //void getSectionStress(int sec,Vector &fSection,double &torsion);
+    //void setSectionDeformation(int sec,Vector &defSection,double &twist);
 
     // Private Attributes - a copy for each object of the class
     ID connectedExternalNodes;              // tags of the end nodes
