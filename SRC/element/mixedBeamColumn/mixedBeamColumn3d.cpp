@@ -911,7 +911,7 @@ int mixedBeamColumn3d::update() {
     this->revertToStart();
   }
 
-  int i,j,k; // integers for loops
+  int i, j; // integers for loops
 
   // Update iteration counter
   // says how many times update has been called since the last commit state
@@ -925,7 +925,7 @@ int mixedBeamColumn3d::update() {
   if (geomLinear) {
     currentLength = initialLength;
   } else {
-    currentLength = initialLength; //Xinlong: need to be cleaned later on
+    currentLength = initialLength; //Xinlong: need to be cleaned later on. Since we use Total Lagrangian, we should do integration on initial length.
   }
 
   // Compute the natural displacements
@@ -965,7 +965,7 @@ int mixedBeamColumn3d::update() {
     if (geomLinear) {
       nd2[i].Zero();
     } else {
-      nd2[i] = this->getNd2(i, internalForce(0), currentLength);
+      nd2[i] = this->getNd2(i, internalForce(0), currentLength); //Xinlong: Shall we use naturalForce(0) instead of internalForce(0) here?
     }
 
     // Transpose of shape functions
@@ -1040,7 +1040,8 @@ int mixedBeamColumn3d::update() {
 
   for( i = 0; i < numSections; i++ ){
     V   = V   + initialLength * wt[i] * nd1T[i] * (sectionDefShapeFcn[i] - sectionDefFibers[i] - sectionFlexibility[i] * ( sectionForceShapeFcn[i] - sectionForceFibers[i] ) );
-    V2  = V2  + initialLength * wt[i] * nd2T[i] * (sectionDefShapeFcn[i] - sectionDefFibers[i]);
+    //for V, see my comments on Denavit's paper. Also need to be verified with Nukala and Alemdar's papers.
+	V2  = V2  + initialLength * wt[i] * nd2T[i] * (sectionDefShapeFcn[i] - sectionDefFibers[i]);
     G   = G   + initialLength * wt[i] * nd1T[i] * nldhat[i];
     G2  = G2  + initialLength * wt[i] * nd2T[i] * nldhat[i];
     H   = H   + initialLength * wt[i] * nd1T[i] * sectionFlexibility[i] * nd1[i];
@@ -1048,7 +1049,7 @@ int mixedBeamColumn3d::update() {
     H22 = H22 + initialLength * wt[i] * nd2T[i] * sectionFlexibility[i] * nd2[i];
     if (!geomLinear) {
       Kg = Kg  + initialLength * wt[i] * this->getKg(i, sectionForceFibers[i], currentLength);
-        // sectionForceFibers[i](0) is the axial load, P
+        // sectionForceFibers[i](0) is the axial load, P. Or shall we use sectionForceShapeFcn[i] here?
       Md = Md  + initialLength * wt[i] * this->getMd(i, sectionDefShapeFcn[i], sectionDefFibers[i], currentLength);
     }
   }
