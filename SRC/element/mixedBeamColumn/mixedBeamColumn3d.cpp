@@ -450,7 +450,8 @@ mixedBeamColumn3d::mixedBeamColumn3d (int tag, int nodeI, int nodeJ, int numSec,
 // CONSTRUCTOR FOR PARALLEL PROCESSING
 mixedBeamColumn3d::mixedBeamColumn3d():
   Element(0,ELE_TAG_mixedBeamColumn3d),
-  connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), crdTransf(0), doRayleigh(0), geomLinear(false),
+  connectedExternalNodes(2), beamIntegr(0), numSections(0), sections(0), 
+  crdTransf(0), doRayleigh(0), geomLinear(false),
   rho(0.0), initialLength(0.0),
   itr(0), initialFlag(0),
   V(NGF), committedV(NGF),
@@ -462,7 +463,8 @@ mixedBeamColumn3d::mixedBeamColumn3d():
   GMH(NGF,NEBD), commitedGMH(NGF,NEBD),
   kv(NEBD,NEBD), kvcommit(NEBD,NEBD),
   Ki(0),
-  sectionForceFibers(0), commitedSectionForceFibers(0), sectionDefFibers(0), commitedSectionDefFibers(0),
+  sectionForceFibers(0), commitedSectionForceFibers(0), 
+  sectionDefFibers(0), commitedSectionDefFibers(0),
   sectionFlexibility(0), commitedSectionFlexibility(0), sectionForceShapeFcn(0), ys(0.0), zs(0.0)
 {
   theNodes[0] = 0;
@@ -737,7 +739,7 @@ int mixedBeamColumn3d::revertToLastCommit() {
 int mixedBeamColumn3d::revertToStart()
 {
   int err;
-  int i,j,k; // for loops
+  int i; // for loops
   i = 0;
 
   // revert the sections state to start
@@ -815,7 +817,7 @@ int mixedBeamColumn3d::revertToStart()
     H12 = H12 + initialLength * wt[i] * nd1T[i] * sectionFlexibility[i] * nd2[i];
     H22 = H22 + initialLength * wt[i] * nd2T[i] * sectionFlexibility[i] * nd2[i];
     // Md is zero since deformations are zero
-    Kg  = Kg  + initialLength * wt[i] * this->getKg(i, 0, initialLength); //Xinlong: This isn't necessary. If P=0.0, Kg is zero
+    //Kg  = Kg  + initialLength * wt[i] * this->getKg(i, 0, initialLength); //This isn't necessary. If P=0.0, Kg is zero. Need to verify if P=0.0
   }
 
   // Compute the inverse of the H matrix
