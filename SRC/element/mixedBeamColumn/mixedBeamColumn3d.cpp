@@ -855,7 +855,25 @@ int mixedBeamColumn3d::revertToStart()
   kvcommit = kv;
 
   //Matrix kvOpenSees = transformNaturalCoordsT*kv*transformNaturalCoords;
-  Ki = new Matrix(crdTransf->getInitialGlobalStiffMatrix(kv));
+  Matrix Tr(NEBD, NEBD); //transformation matrix from element basic system to basic reference system
+  Matrix kr(NEBD, NEBD); //stiffness matrix in the element basic reference system
+  Tr.Zero();
+  kr.Zero();
+
+  Tr(0, 0) = 1.0;
+  Tr(1, 1) = 1.0;
+  Tr(2, 2) = 1.0;
+  Tr(3, 3) = 1.0;
+  Tr(4, 4) = 1.0;
+  Tr(5, 5) = 1.0;
+  Tr(0, 1) = -ys;
+  Tr(0, 2) = ys;
+  Tr(0, 3) = zs;
+  Tr(0, 4) = -zs;
+  //perform transformation - transform axial force form centroid to shear center
+  kr.addMatrixTripleProduct(0.0, Tr, kv, 1.0);
+
+  Ki = new Matrix(crdTransf->getInitialGlobalStiffMatrix(kr));
 
   // Vector V is zero at initial state
   V.Zero();
@@ -895,13 +913,58 @@ const Matrix & mixedBeamColumn3d::getTangentStiff(void) {
   }
   crdTransf->update();  // Will remove once we clean up the corotational 3d transformation -- MHS
   //Matrix ktOpenSees = transformNaturalCoordsT*kv*transformNaturalCoords;
-  return crdTransf->getGlobalStiffMatrix(kv,internalForce);
+
+  Matrix Tr(NEBD, NEBD); //transformation matrix from element basic system to basic reference system
+  Matrix kr(NEBD, NEBD); //stiffness matrix in the element basic reference system
+  Tr.Zero();
+  kr.Zero();
+
+  Tr(0, 0) = 1.0;
+  Tr(1, 1) = 1.0;
+  Tr(2, 2) = 1.0;
+  Tr(3, 3) = 1.0;
+  Tr(4, 4) = 1.0;
+  Tr(5, 5) = 1.0;
+  Tr(0, 1) = -ys;
+  Tr(0, 2) = ys;
+  Tr(0, 3) = zs;
+  Tr(0, 4) = -zs;
+
+  //perform transformation on stiffness matrix - transform axial force form centroid to shear center
+  kr.addMatrixTripleProduct(0.0, Tr, kv, 1.0);
+
+  //perform transformation on internal force vector
+  Vector Pr(NEBD);
+  Pr.Zero();
+  Pr.addMatrixTransposeVector(0.0, Tr, internalForce, 1.0); //compared with dispBeamColumn, we don't consider element load here.
+
+  return crdTransf->getGlobalStiffMatrix(kr,Pr);
 }
 
 const Vector & mixedBeamColumn3d::getResistingForce(void) {
   crdTransf->update();  // Will remove once we clean up the corotational 3d transformation -- MHS
+
+  Matrix Tr(NEBD, NEBD); //transformation matrix from element basic system to basic reference system
+  Tr.Zero();
+
+  Tr(0, 0) = 1.0;
+  Tr(1, 1) = 1.0;
+  Tr(2, 2) = 1.0;
+  Tr(3, 3) = 1.0;
+  Tr(4, 4) = 1.0;
+  Tr(5, 5) = 1.0;
+  Tr(0, 1) = -ys;
+  Tr(0, 2) = ys;
+  Tr(0, 3) = zs;
+  Tr(0, 4) = -zs;
+
+  //perform transformation on internal force vector
+  Vector Pr(NEBD);
+  Pr.Zero();
+  Pr.addMatrixTransposeVector(0.0, Tr, internalForce, 1.0); //compared with dispBeamColumn, we don't consider element load here.
+
   Vector p0Vec(p0, 5);
-  return crdTransf->getGlobalResistingForce(internalForce, p0Vec);
+  return crdTransf->getGlobalResistingForce(Pr, p0Vec);
 }
 
 int mixedBeamColumn3d::update() {
