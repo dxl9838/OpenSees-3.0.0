@@ -376,7 +376,7 @@ DispBeamColumn3d::update(void)
     //int order = theSections[i]->getOrder();
     //const ID &code = theSections[i]->getType();
 
-    Vector e(workArea, 7);
+    Vector e(workArea, 5);
       
     double xi1 = xi[i];
 	double dNv1 = 1.0 + 3.0*xi1*xi1 - 4.0*xi1;
@@ -389,19 +389,25 @@ DispBeamColumn3d::update(void)
 	double ddNw2 = -ddNv2;
 	double Nf1 = xi1;
 
-	//generalized strain to be sent to FiberSection Xinlong
+	//generalized strain
+	double s0 = oneOverL * v(0); //u'
+	double s1 = ddNv1 * v(1) + ddNv2 * v(2); //v"
+	double s2 = ddNw1 * v(3) + ddNw2 * v(4); //w"
+	double s3 = oneOverL * v(5); //phi'
+	double s4 = dNv1 * v(1) + dNv2 * v(2); //v'
+	double s5 = dNw1 * v(3) + dNw2 * v(4); //w'
+	double s6 = Nf1 * v(5); //phi
+	double s7 = v(1); //theta_Iz
+	double s8 = v(3); //theta_Iy
+	double s9 = v(2); //theta_Jz
+	double s10 = v(4); //theta_Jy
 
-	e(0) = oneOverL * v(0); //u'
-	e(1) = ddNv1 * v(1) + ddNv2 * v(2); //v"
-	e(2) = ddNw1 * v(3) + ddNw2 * v(4); //w"
-	e(3) = oneOverL * v(5); //phi'
-	e(4) = dNv1 * v(1) + dNv2 * v(2); //v'
-	e(5) = dNw1 * v(3) + dNw2 * v(4); //w'
-	e(6) = Nf1 * v(5); //phi
-	e(7) = v(1); //theta_Iz
-	e(8) = v(3); //theta_Iy
-	e(9) = v(2); //theta_Jz
-	e(10) = v(4); //theta_Jy
+	//section deformation to be sent to FiberSection
+	e(0) = s0 + (4.0*s7*s7 + 4.0*s8*s8 + 4.0*s9*s9 + 4.0*s10*s10 - 2.0*s7*s9 - 2.0*s8*s10) / 60.0 + (zs*s4 - ys * s5)*s3;
+	e(1) = s1 + s2 * s6;
+	e(2) = -s2 + s1 * s6;
+	e(3) = 0.5*s3*s3;
+	e(4) = s3;
 
     // Set the section deformations
     err += theSections[i]->setTrialSectionDeformation(e);
