@@ -14,32 +14,14 @@ source DisplayModel3D.tcl;		# procedure for displaying 3D perspectives of model
 # define GEOMETRY ------------------------------------------------------------------
 #Nodes, NodeNumber, xCoord, yCoord, zCoord
 node 1	0.00	0	0
-node 2  8.89    0   0
-node 3	17.78	0	0
-node 4	26.67	0	0
-node 5	35.56	0	0
-node 6	44.45   0	0
-node 7	53.34	0	0
-node 8	62.23	0	0
-node 9	71.12	0	0
-node 10	80.01	0	0
-node 11	88.9	0	0
-node 12	97.79	0	0
-node 13	106.68	0	0
-node 14	115.57	0	0
-node 15	124.46	0	0
-node 16	133.35	0	0
-node 17	142.24	0	0
-node 18	151.13	0	0
-node 19	160.02	0	0
-node 20	168.91	0	0
-node 21	177.8	0	0
+node 2	88.9	0	0
+node 3	177.8	0	0
 # ------ define boundary conditions
 # NodeID,dispX,dispY,dispZ,rotX,RotY,RotZ 
 fix 1  1 1 1 1 1 1;    
 set StartNode 1;
-set MiddleNode 11;
-set EndNode 21;
+set MiddleNode 2;
+set EndNode 3;
 # Define  SECTIONS -------------------------------------------------------------
 # define section tags:
 set ColSecTag 1
@@ -78,8 +60,8 @@ element mixedBeamColumn $elemID $nodeI $nodeJ $numIntgrPts $ColSecTag $IDColTran
 } 
 
 # Define RECORDERS -------------------------------------------------------------
-recorder Node -file $dataDir/mixedCantileverDisp2layer.out -time -node $EndNode -dof 1 2 3 4 5 6 disp;			# displacements of middle node
-recorder Node -file $dataDir/mixedCantileverReac2layer.out -time -node $StartNode -dof 1 2 3 4 5 6 reaction;		# support reaction
+recorder Node -file $dataDir/mixedCantileverDisp2layerMB2.out -time -node $EndNode -dof 1 2 3 4 5 6 disp;			# displacements of middle node
+recorder Node -file $dataDir/mixedCantileverReac2layerMB2.out -time -node $StartNode -dof 1 2 3 4 5 6 reaction;		# support reaction
 
 # Define DISPLAY -------------------------------------------------------------
 DisplayModel3D DeformedShape;	 # options: DeformedShape NodeNumbers ModeShape
@@ -100,14 +82,14 @@ system BandGeneral;# how to store and solve the system of equations in the analy
 test NormDispIncr 1.0e-08 1000; # determine if convergence has been achieved at the end of an iteration step
 #algorithm NewtonLineSearch;# use Newton's solution algorithm: updates tangent stiffness at every iteration
 algorithm Newton;
-set Dincr -0.01; #-0.00002
+set Dincr -0.1; #-0.00002
 #integrator LoadControl 0.0001
 #integrator ArcLength 0.05 1.0; #arclength alpha
                                #Node,  dof, 1st incr, Jd, min,   max
-integrator DisplacementControl $EndNode 4   $Dincr     1  $Dincr -0.01;
+integrator DisplacementControl $EndNode 4   $Dincr     1  $Dincr -0.1;
 analysis Static	;# define type of analysis static or transient
 variable algorithmTypeStatic Newton
-set ok [analyze 180];
+set ok [analyze 18];
 puts "Finished"
 #--------------------------------------------------------------------------------
 #set finishTime [clock clicks -milliseconds];
