@@ -30,7 +30,11 @@
 //
 // Purpose: This file contains the class definition for ElasticBeam3d.
 // ElasticBeam3d is a 3d beam element. As such it can only
-// connect to a node with 6-dof. 
+// connect to a node with 6-dof.
+
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Adapted for analysis of asymmetric sections, and
+// input is handled by function 'OPS_ElasticBeam3d(void)'.
 
 #include <ElasticBeam3d.h>
 #include <Domain.h>

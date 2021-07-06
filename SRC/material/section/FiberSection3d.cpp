@@ -27,6 +27,9 @@
 //
 // Description: This file contains the class implementation of FiberSection2d.
 
+// Modified by: Xinlong Du, Northeastern University, USA; Year 2019
+// Description: Modified FiberSection3d.cpp to include shear center coordinates and high-order longitudinal strain terms.
+
 #include <stdlib.h>
 #include <math.h>
 
@@ -428,6 +431,10 @@ FiberSection3d::setTrialSectionDeformation (const Vector &deforms)
   double d4 = deforms(4);  //v'   Xinlong
   double d5 = deforms(5);  //w'   Xinlong
   double d6 = deforms(6);  //phi  Xinlong
+  double d7 = deforms(7);  //theta_Iz
+  double d8 = deforms(8);  //theta_Iy
+  double d9 = deforms(9);  //theta_Jz
+  double d10 = deforms(10); //theta_Jy
 
   static double yLocs[10000];
   static double zLocs[10000];
@@ -456,7 +463,7 @@ FiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 
     // determine material strain and set it
 	double pSquare = (y - ys)*(y - ys) + (z - zs)*(z - zs);
-	double strain = d0 - y * d1 - z * d2 + 0.5*(d4*d4 + d5 * d5) + 0.5*pSquare*d3*d3 + (zs*d4 - ys * d5)*d3 + (z*d1 - y * d2)*d6;
+	double strain = d0 - y * d1 - z * d2 + (4.0*d7*d7+4.0*d8*d8+4.0*d9*d9+4.0*d10*d10-2.0*d7*d9-2.0*d8*d10)/60.0 + 0.5*pSquare*d3*d3 + (zs*d4 - ys * d5)*d3 + (z*d1 - y * d2)*d6;
     res += theMat->setTrial(strain, stress, tangent);
 
     double value = tangent * A; //EA
