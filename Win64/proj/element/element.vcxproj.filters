@@ -120,6 +120,9 @@
     <Filter Include="absorbentBoundaries">
       <UniqueIdentifier>{1b806f65-5bd2-4429-9294-d36935d459e3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="mixedBeamColumn">
+      <UniqueIdentifier>{2cb965e2-6b6f-4c23-a426-d4848a8b39cf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\SRC\element\Element.cpp">
@@ -881,6 +884,9 @@
     <ClCompile Include="..\..\..\SRC\element\absorbentBoundaries\LysmerTriangle.cpp">
       <Filter>absorbentBoundaries</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\SRC\element\mixedBeamColumn\mixedBeamColumn3d.cpp">
+      <Filter>mixedBeamColumn</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\SRC\element\Element.h">
@@ -1536,6 +1542,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\SRC\element\absorbentBoundaries\LysmerTriangle.h">
       <Filter>absorbentBoundaries</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\SRC\element\mixedBeamColumn\mixedBeamColumn3d.h">
+      <Filter>mixedBeamColumn</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

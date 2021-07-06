@@ -82,7 +82,7 @@ void* OPS_FiberSection3d()
 FiberSection3d::FiberSection3d(int tag, int num, Fiber **fibers, UniaxialMaterial *torsion, double yss, double zss):
   SectionForceDeformation(tag, SEC_TAG_FiberSection3d),
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
-  QzBar(0.0), QyBar(0.0), Abar(0.0), yBar(0.0), zBar(0.0), sectionIntegr(0), e(7), s(0), ks(0), theTorsion(0), ys(yss), zs(zss)   //Xinlong
+  QzBar(0.0), QyBar(0.0), Abar(0.0), yBar(0.0), zBar(0.0), sectionIntegr(0), e(5), s(0), ks(0), theTorsion(0), ys(yss), zs(zss)   //Xinlong
 {
   if (numFibers != 0) {
     theMaterials = new UniaxialMaterial *[numFibers];
@@ -157,7 +157,7 @@ FiberSection3d::FiberSection3d(int tag, int num, Fiber **fibers, UniaxialMateria
 FiberSection3d::FiberSection3d(int tag, int num, UniaxialMaterial *torsion, double yss, double zss):    //Xinlong 
     SectionForceDeformation(tag, SEC_TAG_FiberSection3d),
     numFibers(0), sizeFibers(num), theMaterials(0), matData(0),
-    QzBar(0.0), QyBar(0.0), Abar(0.0), yBar(0.0), zBar(0.0), sectionIntegr(0), e(7), s(0), ks(0), theTorsion(0), ys(yss), zs(zss)  //Xinlong
+    QzBar(0.0), QyBar(0.0), Abar(0.0), yBar(0.0), zBar(0.0), sectionIntegr(0), e(5), s(0), ks(0), theTorsion(0), ys(yss), zs(zss)  //Xinlong
 {
     if(sizeFibers != 0) {
 	theMaterials = new UniaxialMaterial *[sizeFibers];
@@ -215,7 +215,7 @@ FiberSection3d::FiberSection3d(int tag, int num, UniaxialMaterial **mats,
 			       SectionIntegration &si, UniaxialMaterial *torsion, double yss, double zss):                   //Xinlong
   SectionForceDeformation(tag, SEC_TAG_FiberSection3d),
   numFibers(num), sizeFibers(num), theMaterials(0), matData(0),
-  QzBar(0.0), QyBar(0.0), Abar(0.0), yBar(0.0), zBar(0.0), sectionIntegr(0), e(7), s(0), ks(0), theTorsion(0), ys(yss), zs(zss)    //Xinlong
+  QzBar(0.0), QyBar(0.0), Abar(0.0), yBar(0.0), zBar(0.0), sectionIntegr(0), e(5), s(0), ks(0), theTorsion(0), ys(yss), zs(zss)    //Xinlong
 {
   if (numFibers != 0) {
     theMaterials = new UniaxialMaterial *[numFibers];
@@ -292,7 +292,7 @@ FiberSection3d::FiberSection3d(int tag, int num, UniaxialMaterial **mats,
 FiberSection3d::FiberSection3d():
   SectionForceDeformation(0, SEC_TAG_FiberSection3d),
   numFibers(0), sizeFibers(0), theMaterials(0), matData(0),
-  QzBar(0.0), QyBar(0.0), Abar(0.0), yBar(0.0), zBar(0.0), sectionIntegr(0), e(7), s(0), ks(0), theTorsion(0), ys(0.0), zs(0.0)     //Xinlong
+  QzBar(0.0), QyBar(0.0), Abar(0.0), yBar(0.0), zBar(0.0), sectionIntegr(0), e(5), s(0), ks(0), theTorsion(0), ys(0.0), zs(0.0)     //Xinlong
 {
   s = new Vector(sData, 5);     //Xinlong
   ks = new Matrix(kData, 5, 5); //Xinlong
@@ -423,7 +423,7 @@ FiberSection3d::setTrialSectionDeformation (const Vector &deforms)
     sData[i] = 0.0;
   for (int i = 0; i < 25; i++) //Xinlong
     kData[i] = 0.0;
-
+  /*
   double d0 = deforms(0);  //u'   Xinlong
   double d1 = deforms(1);  //v"   Xinlong
   double d2 = deforms(2);  //w"   Xinlong
@@ -435,6 +435,12 @@ FiberSection3d::setTrialSectionDeformation (const Vector &deforms)
   double d8 = deforms(8);  //theta_Iy
   double d9 = deforms(9);  //theta_Jz
   double d10 = deforms(10); //theta_Jy
+  */
+  double d0 = deforms(0);
+  double d1 = deforms(1);
+  double d2 = deforms(2);
+  double d3 = deforms(3);
+  double d4 = deforms(4); //Phi'
 
   static double yLocs[10000];
   static double zLocs[10000];
@@ -463,8 +469,9 @@ FiberSection3d::setTrialSectionDeformation (const Vector &deforms)
 
     // determine material strain and set it
 	double pSquare = (y - ys)*(y - ys) + (z - zs)*(z - zs);
-	double strain = d0 - y * d1 - z * d2 + (4.0*d7*d7+4.0*d8*d8+4.0*d9*d9+4.0*d10*d10-2.0*d7*d9-2.0*d8*d10)/60.0 + 0.5*pSquare*d3*d3 + (zs*d4 - ys * d5)*d3 + (z*d1 - y * d2)*d6;
-    res += theMat->setTrial(strain, stress, tangent);
+	//double strain = d0 - y * d1 - z * d2 + (4.0*d7*d7+4.0*d8*d8+4.0*d9*d9+4.0*d10*d10-2.0*d7*d9-2.0*d8*d10)/60.0 + 0.5*pSquare*d3*d3 + (zs*d4 - ys * d5)*d3 + (z*d1 - y * d2)*d6;
+	double strain = d0 - y * d1 + z * d2 + pSquare * d3;
+	res += theMat->setTrial(strain, stress, tangent);
 
     double value = tangent * A; //EA
     double vas1 = -y*value;     //-yEA
@@ -500,7 +507,7 @@ FiberSection3d::setTrialSectionDeformation (const Vector &deforms)
   kData[16] = kData[8];
   kData[17] = kData[13];
 
-  res += theTorsion->setTrial(d3, stress, tangent);
+  res += theTorsion->setTrial(d4, stress, tangent);
   sData[4] = stress;   //T
   kData[24] = tangent; //GJ
 
@@ -1558,7 +1565,7 @@ FiberSection3d::getStressResultantSensitivity(int gradIndex, bool conditional)
     tmpMatrix.addMatrixTransposeProduct(0.0, as, dasdh, tangent);
     
     //ds.addMatrixVector(1.0, tmpMatrix, e, A);
-    ds(0) += (tmpMatrix(0,0)*e(0) + tmpMatrix(0,1)*e(1) + tmpMatrix(0,2)*e(2))*A;
+    ds(0) += (tmpMatrix(0,0)*e(0) + tmpMatrix(0,1)*e(1) + tmpMatrix(0,2)*e(2))*A;//Xinlong: may need to be modified because e is different now.
     ds(1) += (tmpMatrix(1,0)*e(0) + tmpMatrix(1,1)*e(1) + tmpMatrix(1,2)*e(2))*A;
     ds(2) += (tmpMatrix(2,0)*e(0) + tmpMatrix(2,1)*e(1) + tmpMatrix(2,2)*e(2))*A;
   }
