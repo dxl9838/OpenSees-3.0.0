@@ -1,1 +1,9 @@
-OpenSees-3.0.0
+# Beam elements with axial-flexural-torsion interaction
+Based on OpenSees-3.0.0, two elements are modified (**elasticBeamColumn** and **dispBeamColumn**) and one element (**mixedBeamColumn**) is added so that the axial-flexural-torsional interaction behavior (such as LTB, FTB and TB) can be modeled. These elements originally were developed for collapse modeling of electrical transmission towers, which usually are made of steel angles, so warping is not considered. Both geometric nonlinearity and material nonlinearity are included. These elements have been varified with a lot of examples both on Window and Linux. Some simple examples can be found in the repo **dxl9838/OpenSeesExamples**, while examples of electrical transmission towers can be found in the repo **TransTowerOpenSees**. Two of these elements have been added to the official OpenSees repository as **dispBeamColumnAsym** and **mixedBeamColumnAsym** and please see the official OpenSees documentation for how to use them. It is similar to use these elements with OpenSees-3.0.0 and only the element names are a little different. Here are the links of the official OpenSees documentation:
+https://opensees.github.io/OpenSeesDocumentation/user/manual/model/elements/dispBeamColumnAsym.html
+https://opensees.github.io/OpenSeesDocumentation/user/manual/model/elements/mixedBeamColumnAsym.html
+Please do not hesitate to contact Xinlong Du (du.xinl@northeastern.edu) if you have any questions.
+
+References:
+Du, X., & Hajjar, J. (2021). Three-dimensional nonlinear displacement-based beam element for members with angle and tee sections. Engineering Structures, 239, 112239.
+Du, X., & Hajjar, J. F. (2021). Three-dimensional nonlinear mixed 6-DOF beam element for thin-walled members. Thin-Walled Structures, 164, 107817.
